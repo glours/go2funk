@@ -1,0 +1,58 @@
+package api
+
+import (
+	"errors"
+	"testing"
+)
+
+var (
+	_ Option[int] = None[int]{}
+	_ Option[int] = Some[int]{value: 10}
+	_ Option[int] = Of[int](10)
+	_ Option[int] = Empty[int]()
+	some Option[int] = Of(10)
+	none Option[int]= Empty[int]()
+)
+
+func TestIsPresent(t *testing.T) {
+	if some.IsEmpty() {
+		t.Errorf("A value should be present!")
+	}
+
+	if !none.IsEmpty() {
+		t.Errorf("No value should be present!")
+	}
+}
+
+func TestGetOrElse(t *testing.T) {
+	if some.OrElse(20) != 10 {
+		t.Errorf("Value should be 10 not 20")
+	}
+
+	if none.OrElse(20) != 20 {
+		t.Errorf("Value should be 20!")
+	}
+}
+
+func TestGetOrError(t *testing.T) {
+	if _, err:= some.OrElseError(errors.New("should not be thrown")); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := none.OrElseError(errors.New("should return an error")); err == nil {
+		t.Error(err)
+	}
+}
+
+func TestFilter(t *testing.T) {
+	var evenPredicate = func (value int) bool {
+		return value % 2 == 0
+	}
+	if some.Filter(evenPredicate).IsEmpty() {
+		t.Error("result of filtering should not be empty")
+	}
+
+	if !none.Filter(evenPredicate).IsEmpty() {
+		t.Error("result of filtering should be empty")
+	}
+}

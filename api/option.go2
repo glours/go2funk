@@ -1,0 +1,57 @@
+package api
+
+type Option[T any] interface {
+	IsEmpty() bool
+	OrElse(T) T
+	OrElseError(err error) (T, error)
+	Filter(func(T) bool) Option[T]
+}
+
+func Empty[T any]() Option[T] {
+	return None[T]{}
+}
+
+func Of[T any](value T) Option[T] {
+	return Some[T]{value}
+}
+
+type None[T any] struct { }
+
+func (n None[T]) IsEmpty() bool {
+	return true
+}
+
+func (n None[T]) OrElse(value T) T {
+	return value
+}
+
+func (n None[T]) OrElseError(err error) (T, error) {
+	return *new(T), err
+}
+
+func (n None[T]) Filter(predictate func(T) bool) Option[T] {
+	return Empty[T]()
+}
+
+type Some[T] struct {
+	value T
+}
+
+func (s Some[T]) IsEmpty() bool {
+	return false
+}
+
+func (s Some[T]) OrElse(value T) T {
+	return s.value
+}
+
+func (s Some[T]) OrElseError(err error) (T, error) {
+	return s.value, nil
+}
+
+func (s Some[T]) Filter(predicate func(T) bool) Option[T] {
+	if predicate(s.value) {
+		return s
+	}
+	return Empty[T]()
+}
