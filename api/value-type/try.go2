@@ -1,0 +1,79 @@
+package value_type
+
+import "errors"
+
+type Try[A any] interface {
+	IsFailure() bool
+	OrElse(A) A
+	OrElseCause() (A, error)
+	Filter(func(A) bool, error) Try[A]
+}
+
+func TryOf[A any](lambda func() (A, error)) Try[A] {
+	value, err := lambda()
+	if err != nil {
+		return Failure[A]{}
+	}
+	return Success[A]{value}
+}
+func SuccessOf[A any](value A) Try[A] {
+	return Success[A]{value}
+}
+
+func FailureOf[A any](cause error) Try[A] {
+	return Failure[A]{cause}
+}
+
+type Success[A any] struct {
+	value A
+}
+
+func (s Success[A]) IsFailure() bool {
+	return false
+}
+
+func (s Success[A]) OrElse(value A) A {
+	return s.value
+}
+
+func (s Success[A]) OrElseCause() (A, error) {
+	return s.value, nil
+}
+
+func (s Success[A]) Filter(predicate func(A) bool, cause error) Try[A] {
+	if predicate == nil {
+		return FailureOf[A](errors.New("predicate should not be nil"))
+	}
+	if cause == nil {
+		return FailureOf[A](errors.New("error cause should not be nil"))
+	}
+	if predicate(s.value) {
+		return s
+	}
+	return FailureOf[A](cause)
+}
+
+type Failure[A any] struct{
+	cause error
+}
+func (f Failure[A]) IsFailure() bool {
+	return true
+}
+
+func (f Failure[A]) OrElse(value A) A {
+	return value
+}
+
+func (f Failure[A]) OrElseCause() (A, error) {
+	return *new(A), f.cause
+}
+
+func (f Failure[A]) Filter(predicate func(A) bool, cause error) Try[A] {
+	if predicate == nil {
+		return FailureOf[A](errors.New("predicate should not be nil"))
+	}
+	if cause == nil {
+		return FailureOf[A](errors.New("error cause should not be nil"))
+	}
+	return f
+}

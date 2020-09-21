@@ -1,0 +1,89 @@
+package value_type
+import (
+	"errors"
+	"testing"
+)
+var (
+	defaultTryError   = errors.New("default Try error")
+	nilCauseError     = errors.New("error cause should not be nil")
+	nilPredicateError = errors.New("predicate should not be nil")
+	_ Try[int] = Success[int]{10}
+	_ Try[int] = Failure[int]{cause: defaultTryError}
+	success Try[int] = SuccessOf[int](10)
+	failure Try[int] = FailureOf[int](defaultTryError)
+ 	evenPredicate = func (value int) bool {
+		return value % 2 == 0
+	}
+)
+
+func TestIsFailure(t *testing.T) {
+	if success.IsFailure() {
+		t.Errorf("success should not be a failure")
+	}
+
+	if !failure.IsFailure() {
+		t.Error("failure should not be a success")
+	}
+}
+
+func TestTryOf(t *testing.T) {
+	if TryOf(func()(int, error) { return 10, nil}).IsFailure() {
+		t.Error("should not be a failure")
+	}
+
+	if !TryOf(func()(int, error) {return 0, defaultTryError }).IsFailure() {
+		t.Error("should not be a success")
+	}
+}
+
+func TestOrElse(t *testing.T) {
+	if success.OrElse(20) != 10 {
+		t.Error("value should be 10")
+	}
+
+	if failure.OrElse(20) != 20 {
+		t.Error("value should be 20")
+	}
+}
+
+func TestOrElseCause(t *testing.T) {
+	if value, err := success.OrElseCause(); value != 10 || err != nil {
+		t.Error(err)
+	}
+
+	if _, err := failure.OrElseCause(); err == nil {
+		t.Error("should return default cause")
+	}
+}
+
+func TestTryFilterCheckParam(t *testing.T) {
+	_, err := success.Filter(nil, defaultTryError).OrElseCause()
+	if err.Error() != nilPredicateError.Error() {
+		t.Error("should return a Try with nil predicate cause")
+	}
+
+	_, err = success.Filter(evenPredicate, nil).OrElseCause();
+	if err.Error() != nilCauseError.Error() {
+		t.Error("should return a Try with nil cause error")
+	}
+
+	_, err = failure.Filter(nil, defaultTryError).OrElseCause()
+	if err.Error() != nilPredicateError.Error() {
+		t.Error("should return a Try with nil predicate cause")
+	}
+
+	_, err = failure.Filter(evenPredicate, nil).OrElseCause();
+	if err.Error() != nilCauseError.Error() {
+		t.Error("should return a Try with nil cause error")
+	}
+}
+
+func TestTryFilter(t *testing.T) {
+	if success.Filter(evenPredicate, defaultTryError).IsFailure() {
+		t.Error("should not be a failure")
+	}
+
+	if !failure.Filter(evenPredicate, defaultTryError).IsFailure() {
+		t.Error("should not be a success")
+	}
+}
