@@ -1,4 +1,4 @@
-package api
+package value_type
 
 type Option[T any] interface {
 	IsEmpty() bool

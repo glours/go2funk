@@ -1,4 +1,4 @@
-package api
+package value_type
 
 import (
 	"errors"
