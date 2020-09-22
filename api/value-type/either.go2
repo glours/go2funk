@@ -1,0 +1,66 @@
+package value_type
+
+type Either[L, R any] interface {
+	IsLeft() bool
+	IsRight() bool
+	OrElse(Either[L,R]) Either[L, R]
+	GetOrElse(R) R
+	Swap() Either[R, L]
+	//Filter(func(R) bool,)
+}
+
+func RightOf[L, R any](value R) Either[L, R] {
+	return Right[L, R]{value}
+}
+
+func LeftOf[L,R any](value L) Either[L, R] {
+	return Left[L, R]{value}
+}
+
+type Right[L, R any] struct {
+	value R
+}
+
+func (r Right[L,R]) IsLeft() bool {
+	return false
+}
+
+func (r Right[L,R]) IsRight() bool {
+	return true
+}
+
+func (r Right[L,R]) Swap() Either[R,L] {
+	return LeftOf[R,L](r.value)
+}
+
+func (r Right[L,R]) OrElse(other Either[L,R]) Either[L, R] {
+	return r
+}
+
+func (r Right[L,R]) GetOrElse(other R) R {
+	return r.value
+}
+
+type Left[L, R any] struct {
+	value L
+}
+
+func (l Left[L,R]) IsLeft() bool {
+	return true
+}
+
+func (l Left[L,R]) IsRight() bool {
+	return false
+}
+
+func (l Left[L,R]) Swap() Either[R,L] {
+	return RightOf[R,L](l.value)
+}
+
+func (l Left[L,R]) OrElse(other Either[L,R]) Either[L, R] {
+	return other
+}
+
+func (l Left[L,R]) GetOrElse(other R) R {
+	return other
+}

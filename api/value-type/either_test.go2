@@ -1,0 +1,64 @@
+package value_type
+
+import (
+	"errors"
+	"testing"
+)
+
+var (
+	defaultEitherError = errors.New("default Either error")
+	_ Either[error, int] = Right[error, int]{10}
+	_ Either[error, int] = Left[error, int]{defaultEitherError}
+	right Either[error, int] = RightOf[error, int](10)
+	left Either[error, int] = LeftOf[error, int](defaultEitherError)
+)
+
+func TestIsRight(t *testing.T) {
+	if !right.IsRight() {
+		t.Errorf("should be a Right not Left")
+	}
+
+	if left.IsRight() {
+		t.Errorf("should be a Left not Right")
+	}
+}
+
+func TestIsLeft(t *testing.T) {
+	if right.IsLeft() {
+		t.Errorf("should be a Right not Left")
+	}
+
+	if !left.IsLeft() {
+		t.Errorf("should be a Left not Right")
+	}
+}
+
+func TestSwap(t *testing.T) {
+	if right.Swap().IsRight() {
+		t.Errorf("should be a Left not Right")
+	}
+
+	if left.Swap().IsLeft() {
+		t.Errorf("should be a Right not Left")
+	}
+}
+
+func TestEitherOrElse(t *testing.T) {
+	if right.OrElse(left).IsLeft() {
+		t.Errorf("should be a Right not Left")
+	}
+
+	if left.OrElse(right).IsLeft() {
+		t.Errorf("should be a Right not Left")
+	}
+}
+
+func TestEitherGetOrElse(t *testing.T) {
+	if right.GetOrElse(20) != 10 {
+		t.Errorf("value should be 10")
+	}
+
+	if left.GetOrElse(20) != 20 {
+		t.Errorf("value should be 20")
+	}
+}
