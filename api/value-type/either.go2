@@ -6,7 +6,8 @@ type Either[L, R any] interface {
 	OrElse(Either[L,R]) Either[L, R]
 	GetOrElse(R) R
 	Swap() Either[R, L]
-	//Filter(func(R) bool,)
+	FilterOrElse(func(R) bool, Either[L,R]) Either[L,R]
+	Filter(func(R) bool) Option[Either[L,R]]
 }
 
 func RightOf[L, R any](value R) Either[L, R] {
@@ -21,46 +22,69 @@ type Right[L, R any] struct {
 	value R
 }
 
-func (r Right[L,R]) IsLeft() bool {
+func (r Right[L, R]) IsLeft() bool {
 	return false
 }
 
-func (r Right[L,R]) IsRight() bool {
+func (r Right[L, R]) IsRight() bool {
 	return true
 }
 
-func (r Right[L,R]) Swap() Either[R,L] {
-	return LeftOf[R,L](r.value)
+func (r Right[L, R]) Swap() Either[R, L] {
+	return LeftOf[R, L](r.value)
 }
 
-func (r Right[L,R]) OrElse(other Either[L,R]) Either[L, R] {
+func (r Right[L, R]) OrElse(other Either[L, R]) Either[L, R] {
 	return r
 }
 
-func (r Right[L,R]) GetOrElse(other R) R {
+func (r Right[L, R]) GetOrElse(other R) R {
 	return r.value
+}
+
+func (r Right[L, R]) FilterOrElse(predicate func(R) bool, orElse Either[L, R]) Either[L, R] {
+	if predicate(r.value) {
+		return r
+	}
+	return orElse
+}
+
+func (r Right[L, R])Filter(predicate func(R) bool) Option[Either[L, R]] {
+	if predicate(r.value) {
+		return Of[Either[L, R]](r)
+	}
+	return Empty[Either[L, R]]()
 }
 
 type Left[L, R any] struct {
 	value L
 }
 
-func (l Left[L,R]) IsLeft() bool {
+func (l Left[L, R]) IsLeft() bool {
 	return true
 }
 
-func (l Left[L,R]) IsRight() bool {
+func (l Left[L, R]) IsRight() bool {
 	return false
 }
 
-func (l Left[L,R]) Swap() Either[R,L] {
-	return RightOf[R,L](l.value)
+func (l Left[L, R]) Swap() Either[R, L] {
+	return RightOf[R, L](l.value)
 }
 
-func (l Left[L,R]) OrElse(other Either[L,R]) Either[L, R] {
+func (l Left[L, R]) OrElse(other Either[L, R]) Either[L, R] {
 	return other
 }
 
-func (l Left[L,R]) GetOrElse(other R) R {
+func (l Left[L, R]) GetOrElse(other R) R {
 	return other
 }
+
+func (l Left[L, R]) FilterOrElse(predicate func(R) bool, orElse Either[L, R]) Either[L, R] {
+	return l
+}
+
+func (l Left[L, R])Filter(predicate func(R) bool) Option[Either[L, R]] {
+	return Empty[Either[L, R]]()
+}
+

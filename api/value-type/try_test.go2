@@ -11,7 +11,7 @@ var (
 	_ Try[int] = Failure[int]{cause: defaultTryError}
 	success Try[int] = SuccessOf[int](10)
 	failure Try[int] = FailureOf[int](defaultTryError)
- 	evenPredicate = func (value int) bool {
+ 	EvenPredicate = func (value int) bool {
 		return value % 2 == 0
 	}
 )
@@ -62,7 +62,7 @@ func TestTryFilterCheckParam(t *testing.T) {
 		t.Error("should return a Try with nil predicate cause")
 	}
 
-	_, err = success.Filter(evenPredicate, nil).OrElseCause();
+	_, err = success.Filter(EvenPredicate, nil).OrElseCause();
 	if err.Error() != nilCauseError.Error() {
 		t.Error("should return a Try with nil cause error")
 	}
@@ -72,18 +72,18 @@ func TestTryFilterCheckParam(t *testing.T) {
 		t.Error("should return a Try with nil predicate cause")
 	}
 
-	_, err = failure.Filter(evenPredicate, nil).OrElseCause();
+	_, err = failure.Filter(EvenPredicate, nil).OrElseCause();
 	if err.Error() != nilCauseError.Error() {
 		t.Error("should return a Try with nil cause error")
 	}
 }
 
 func TestTryFilter(t *testing.T) {
-	if success.Filter(evenPredicate, defaultTryError).IsFailure() {
+	if success.Filter(EvenPredicate, defaultTryError).IsFailure() {
 		t.Error("should not be a failure")
 	}
 
-	if !failure.Filter(evenPredicate, defaultTryError).IsFailure() {
+	if !failure.Filter(EvenPredicate, defaultTryError).IsFailure() {
 		t.Error("should not be a success")
 	}
 }

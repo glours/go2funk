@@ -62,3 +62,33 @@ func TestEitherGetOrElse(t *testing.T) {
 		t.Errorf("value should be 20")
 	}
 }
+
+func TestEitherFilterOrElse(t *testing.T) {
+	if right.FilterOrElse(EvenPredicate, left).IsLeft() {
+		t.Error("should not be a Left")
+	}
+
+	if left.FilterOrElse(EvenPredicate, right).IsRight() {
+		t.Error("should not be a Right")
+	}
+
+	odd := RightOf[error, int](11)
+	if odd.FilterOrElse(EvenPredicate, left).IsRight() {
+		t.Error("should not be a Right")
+	}
+}
+
+func TestEitherFilter(t *testing.T) {
+	if right.Filter(EvenPredicate).IsEmpty(){
+		t.Error("should be a Some of Either")
+	}
+
+	if !left.Filter(EvenPredicate).IsEmpty() {
+		t.Error("should be a Empty of Either")
+	}
+
+	odd := RightOf[error, int](11)
+	if !odd.Filter(EvenPredicate).IsEmpty() {
+		t.Error("should be a Empty of Either")
+	}
+}
