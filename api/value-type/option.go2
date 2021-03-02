@@ -2,9 +2,16 @@ package value_type
 
 type Option[T any] interface {
 	IsEmpty() bool
-	OrElse(T) T
+	OrElse(value T) T
 	OrElseError(err error) (T, error)
 	Filter(func(T) bool) Option[T]
+}
+
+func MapOption[T any, U any](option Option[T], mapper func(T) U) Option[U] {
+	if option.IsEmpty() {
+		return None[U]{}
+	}
+	return Some[U]{mapper(option.OrElse(*new(T)))}
 }
 
 func Empty[T any]() Option[T] {
@@ -33,7 +40,7 @@ func (n None[T]) Filter(predictate func(T) bool) Option[T] {
 	return Empty[T]()
 }
 
-type Some[T] struct {
+type Some[T any] struct {
 	value T
 }
 

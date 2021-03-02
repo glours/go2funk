@@ -9,6 +9,13 @@ type Try[A any] interface {
 	Filter(func(A) bool, error) Try[A]
 }
 
+func MapTry[T, U any](try Try[T], mapper func(T) U) Try[U] {
+	if try.IsFailure() {
+		return Failure[U]{}
+	}
+	return Success[U]{mapper(try.OrElse(*new(T)))}
+}
+
 func TryOf[A any](lambda func() (A, error)) Try[A] {
 	value, err := lambda()
 	if err != nil {

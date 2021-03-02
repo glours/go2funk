@@ -2,6 +2,7 @@ package value_type
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 )
 
@@ -91,4 +92,20 @@ func TestEitherFilter(t *testing.T) {
 	if !odd.Filter(EvenPredicate).IsEmpty() {
 		t.Error("should be a Empty of Either")
 	}
+}
+
+func TestMapEither(t *testing.T) {
+	var mapper = func (value int) string {
+		return strconv.Itoa(value)
+	}
+	var mapRight Either[error, string] = MapEither(right, mapper)
+	if mapRight.GetOrElse("good") != "10" {
+		t.Errorf("value should be 10")
+	}
+
+	var mapLeft Either[error, string]= MapEither[error, int, string](left, mapper)
+	if mapLeft.IsRight() {
+		t.Errorf("should be an Left Either")
+	}
+
 }

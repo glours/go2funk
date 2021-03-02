@@ -2,6 +2,7 @@ package value_type
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 )
 
@@ -54,5 +55,19 @@ func TestFilter(t *testing.T) {
 
 	if !none.Filter(evenPredicate).IsEmpty() {
 		t.Error("result of filtering should be empty")
+	}
+}
+
+func TestOptionMap(t *testing.T) {
+	var mapper = func (value int) string {
+		return strconv.Itoa(value)
+	}
+
+	if !MapOption[int, string](none, mapper).IsEmpty() {
+		t.Error("result of MapOption function should be empty")
+	}
+
+	if MapOption[int, string](some, mapper).IsEmpty() {
+		t.Error("result of MapOption function should not be empty")
 	}
 }
