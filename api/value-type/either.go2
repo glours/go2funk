@@ -4,7 +4,8 @@ type Either[L, R any] interface {
 	IsLeft() bool
 	IsRight() bool
 	OrElse(Either[L,R]) Either[L, R]
-	GetOrElse(R) R
+	GetOrElse(other R) R
+	GetLeftOrElse(other L) L
 	Swap() Either[R, L]
 	FilterOrElse(func(R) bool, Either[L,R]) Either[L,R]
 	Filter(func(R) bool) Option[Either[L,R]]
@@ -49,11 +50,15 @@ func (r Right[L, R]) FilterOrElse(predicate func(R) bool, orElse Either[L, R]) E
 	return orElse
 }
 
-func (r Right[L, R])Filter(predicate func(R) bool) Option[Either[L, R]] {
+func (r Right[L, R]) Filter(predicate func(R) bool) Option[Either[L, R]] {
 	if predicate(r.value) {
 		return Of[Either[L, R]](r)
 	}
 	return Empty[Either[L, R]]()
+}
+
+func (r Right[L, R]) GetLeftOrElse(other L) L {
+	return other
 }
 
 type Left[L, R any] struct {
@@ -84,7 +89,10 @@ func (l Left[L, R]) FilterOrElse(predicate func(R) bool, orElse Either[L, R]) Ei
 	return l
 }
 
-func (l Left[L, R])Filter(predicate func(R) bool) Option[Either[L, R]] {
+func (l Left[L, R]) Filter(predicate func(R) bool) Option[Either[L, R]] {
 	return Empty[Either[L, R]]()
 }
 
+func (l Left[L, R]) GetLeftOrElse(other L) L {
+	return l.value
+}
