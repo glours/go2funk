@@ -1,3 +1,3 @@
-module glours/go2test
+module glours/go2funk
 
 go 1.16

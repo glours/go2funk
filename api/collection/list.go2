@@ -1,0 +1,82 @@
+package collection
+
+// List is a immutable interface of List collection.
+type List[T any] interface {
+	head() T
+	tail() List[T]
+	IsEmpty() bool
+	Append(value T) List[T]
+	Length() int
+}
+
+func Empty[T any]() List[T] {
+	return nil[T]{}
+}
+
+func Of[T any](value T) List[T] {
+	return newCons[T](value, Empty[T]())
+}
+
+func OfSlice[T any](elements ...T) List[T] {
+	result := Empty[T]()
+	for i := len(elements) - 1; i > 0; i-- {
+		result = result.Append(elements[i])
+	}
+	return result
+}
+
+type cons[T any] struct {
+	consHead T
+	consTail List[T]
+	length   int
+}
+
+func newCons[T any](value T, tail List[T]) List[T] {
+	return cons[T]{
+		consHead: value,
+		consTail: tail,
+		length:   1 + tail.Length(),
+	}
+}
+
+func (c cons[T]) head() T {
+	return c.consHead
+}
+
+func (c cons[T]) tail() List[T] {
+	return c.consTail
+}
+
+func (c cons[T]) IsEmpty() bool {
+	return false
+}
+
+func (c cons[T]) Append(value T) List[T] {
+	return newCons(c.consHead, c.consTail.Append(value))
+}
+
+func (c cons[T]) Length() int {
+	return c.length
+}
+
+type nil[T any] struct{}
+
+func (n nil[T]) head() T {
+	return *new(T)
+}
+
+func (n nil[T]) tail() List[T] {
+	return Empty[T]()
+}
+
+func (n nil[T]) IsEmpty() bool {
+	return false
+}
+
+func (n nil[T]) Length() int {
+	return 0
+}
+
+func (n nil[T]) Append(value T) List[T] {
+	return newCons[T](value, Empty[T]())
+}
