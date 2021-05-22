@@ -1,0 +1,276 @@
+package collection
+
+import (
+	"strconv"
+	"testing"
+)
+
+var (
+	_ List[int] = nil[int]{}
+	_ List[int] = cons[int]{
+		consHead: 10,
+		consTail: Empty[int](),
+		length:   1,
+	}
+	empty                List[int] = Empty[int]()
+	singleElementList    List[int] = Of[int](10)
+	multipleElementsList List[int] = OfSlice[int]([]int{1, 2, 3, 4, 5})
+)
+
+func TestHead(t *testing.T) {
+	testCases := []struct {
+		name     string
+		value    List[int]
+		expected int
+	}{
+		{
+			name:     "Empty List",
+			value:    empty,
+			expected: 0,
+		},
+		{
+			name:     "Single Element List",
+			value:    singleElementList,
+			expected: 10,
+		},
+		{
+			name:     "Multiple Elements List",
+			value:    multipleElementsList,
+			expected: 1,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if testCase.value.head() != testCase.expected {
+				t.Errorf("expected %d but value is %d", testCase.expected, testCase.value.head())
+			}
+		})
+	}
+}
+
+func TestTail(t *testing.T) {
+	testCases := []struct {
+		name     string
+		value    List[int]
+		expected List[int]
+	}{
+		{
+			name:     "Empty List",
+			value:    empty,
+			expected: empty,
+		},
+		{
+			name:     "Single Element List",
+			value:    singleElementList,
+			expected: empty,
+		},
+		{
+			name:     "Multiple Elements List",
+			value:    multipleElementsList,
+			expected: OfSlice[int]([]int{2, 3, 4, 5}),
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if testCase.value.tail() != testCase.expected {
+				t.Errorf("expected %d but value is %d", testCase.expected, testCase.value.tail())
+			}
+		})
+	}
+}
+
+func TestIsEmpty(t *testing.T) {
+	testCases := []struct {
+		name    string
+		value   List[int]
+		isEmpty bool
+	}{
+		{
+			name:    "Empty List",
+			value:   empty,
+			isEmpty: true,
+		},
+		{
+			name:    "Single Element List",
+			value:   singleElementList,
+			isEmpty: false,
+		},
+		{
+			name:    "Multiple Elements List",
+			value:   multipleElementsList,
+			isEmpty: false,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if testCase.value.IsEmpty() != testCase.isEmpty {
+				t.Errorf("expected %t but value is %t", testCase.isEmpty, testCase.value.IsEmpty())
+			}
+		})
+	}
+}
+
+func TestLenght(t *testing.T) {
+	testCases := []struct {
+		name   string
+		value  List[int]
+		length int
+	}{
+		{
+			name:   "Empty List",
+			value:  empty,
+			length: 0,
+		},
+		{
+			name:   "Single Element List",
+			value:  singleElementList,
+			length: 1,
+		},
+		{
+			name:   "Multiple Elements List",
+			value:  multipleElementsList,
+			length: 5,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if testCase.value.Length() != testCase.length {
+				t.Errorf("expected %d but value is %d", testCase.length, testCase.value.Length())
+			}
+		})
+	}
+}
+
+func TestAppend(t *testing.T) {
+	testCases := []struct {
+		name   string
+		value  List[int]
+		length int
+	}{
+		{
+			name:   "Empty List",
+			value:  empty,
+			length: 1,
+		},
+		{
+			name:   "Single Element List",
+			value:  singleElementList,
+			length: 2,
+		},
+		{
+			name:   "Multiple Elements List",
+			value:  multipleElementsList,
+			length: 6,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := testCase.value.Append(10)
+			if result.Length() != testCase.length {
+				t.Errorf("expected %d but value is %d", testCase.length, result.Length())
+			}
+		})
+	}
+}
+
+func TestAppendAll(t *testing.T) {
+	testCases := []struct {
+		name   string
+		value  List[int]
+		length int
+	}{
+		{
+			name:   "Empty List",
+			value:  empty,
+			length: 3,
+		},
+		{
+			name:   "Single Element List",
+			value:  singleElementList,
+			length: 4,
+		},
+		{
+			name:   "Multiple Elements List",
+			value:  multipleElementsList,
+			length: 8,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := testCase.value.AppendAll([]int{10, 20, 30})
+			if result.Length() != testCase.length {
+				t.Errorf("expected %d but value is %d", testCase.length, result.Length())
+			}
+		})
+	}
+}
+
+func TestMapList(t *testing.T) {
+	var mapper = func(value int) string {
+		return strconv.Itoa(value)
+	}
+	testCases := []struct {
+		name     string
+		value    List[int]
+		expected List[string]
+	}{
+		{
+			name:     "Empty List",
+			value:    empty,
+			expected: Empty[string](),
+		},
+		{
+			name:     "Single Element List",
+			value:    singleElementList,
+			expected: Of[string]("10"),
+		},
+		{
+			name:     "Multiple Elements List",
+			value:    multipleElementsList,
+			expected: OfSlice[string]([]string{"1", "2", "3", "4", "5"}),
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := MapList[int, string](testCase.value, mapper)
+			if result != testCase.expected {
+				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+			}
+		})
+	}
+}
+
+func TestFilterList(t *testing.T) {
+	var evenPredicate = func (value int) bool {
+		return value % 2 == 0
+	}
+	testCases := []struct {
+		name     string
+		value    List[int]
+		expected List[int]
+	}{
+		{
+			name:     "Empty List",
+			value:    empty,
+			expected: Empty[int](),
+		},
+		{
+			name:     "Single Element List",
+			value:    singleElementList,
+			expected: Of[int](10),
+		},
+		{
+			name:     "Multiple Elements List",
+			value:    multipleElementsList,
+			expected: OfSlice[int]([]int{2, 4}),
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := testCase.value.Filter(evenPredicate)
+			if result != testCase.expected {
+				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+			}
+		})
+	}
+}

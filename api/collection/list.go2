@@ -6,7 +6,17 @@ type List[T any] interface {
 	tail() List[T]
 	IsEmpty() bool
 	Append(value T) List[T]
+	AppendAll(values []T) List[T]
 	Length() int
+	Filter(func(T) bool) List[T]
+}
+
+func MapList[T any, U any](list List[T], mapper func(T) U) List[U] {
+	result := Empty[U]()
+	if list.IsEmpty() {
+		return result
+	}
+	return newCons[U](mapper(list.head()), MapList(list.tail(), mapper))
 }
 
 func Empty[T any]() List[T] {
@@ -17,12 +27,9 @@ func Of[T any](value T) List[T] {
 	return newCons[T](value, Empty[T]())
 }
 
-func OfSlice[T any](elements ...T) List[T] {
+func OfSlice[T any](elements []T) List[T] {
 	result := Empty[T]()
-	for i := len(elements) - 1; i > 0; i-- {
-		result = result.Append(elements[i])
-	}
-	return result
+	return result.AppendAll(elements)
 }
 
 type cons[T any] struct {
@@ -55,8 +62,26 @@ func (c cons[T]) Append(value T) List[T] {
 	return newCons(c.consHead, c.consTail.Append(value))
 }
 
+func (c cons[T]) AppendAll(values []T) List[T] {
+	result := newCons[T](c.consHead, c.consTail)
+	for _, value := range values {
+		result = result.Append(value)
+	}
+	return result
+}
+
 func (c cons[T]) Length() int {
 	return c.length
+}
+
+func (c cons[T]) Filter(predicate func(T) bool) List[T] {
+	if predicate(c.consHead) {
+		return newCons[T](c.consHead, c.consTail.Filter(predicate))
+	}
+	if c.tail().IsEmpty() {
+		return c.consTail
+	}
+	return newCons(c.consTail.head(), c.consTail.tail()).Filter(predicate)
 }
 
 type nil[T any] struct{}
@@ -70,7 +95,7 @@ func (n nil[T]) tail() List[T] {
 }
 
 func (n nil[T]) IsEmpty() bool {
-	return false
+	return true
 }
 
 func (n nil[T]) Length() int {
@@ -79,4 +104,17 @@ func (n nil[T]) Length() int {
 
 func (n nil[T]) Append(value T) List[T] {
 	return newCons[T](value, Empty[T]())
+}
+
+func (n nil[T]) AppendAll(elements []T) List[T] {
+	result := Empty[T]()
+	for _, element := range elements {
+		result = result.Append(element)
+	}
+	return result
+}
+
+func (n nil[T]) Filter(predicate func(T) bool) List[T] {
+	return n
+
 }
