@@ -1,4 +1,4 @@
-package value_type
+package control
 
 type Option[T any] interface {
 	IsEmpty() bool
