@@ -1,6 +1,9 @@
 package collection
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // List is a immutable interface of List collection.
 type List[T any] interface {
@@ -13,6 +16,7 @@ type List[T any] interface {
 	Filter(func(T) bool) List[T]
 	Remove(value T) List[T]
 	RemovePredicate(func(T) bool) List[T]
+	Insert(int, T) (List[T], error)
 }
 
 func MapList[T any, U any](list List[T], mapper func(T) U) List[U] {
@@ -24,7 +28,7 @@ func MapList[T any, U any](list List[T], mapper func(T) U) List[U] {
 }
 
 func Empty[T any]() List[T] {
-	return nil[T]{}
+	return empty[T]{}
 }
 
 func Of[T any](value T) List[T] {
@@ -108,29 +112,47 @@ func (c cons[T]) RemovePredicate(predicate func(T) bool) List[T] {
 	return newCons(c.consTail.head(), c.consTail.tail()).RemovePredicate(predicate)
 }
 
-type nil[T any] struct{}
+func (c cons[T]) Insert(index int, value T) (List[T], error) {
+	if index < 0 {
+		return Empty[T](), fmt.Errorf("index out of range %d on List", index)
+	}
+	if index == 0 {
+		return newCons[T](value, c), nil
+	}
+	if c.IsEmpty() {
+		return Empty[T](), fmt.Errorf("index out of range %d on List", index)
+	}
+	tail, err := c.consTail.Insert(index-1, value)
+	if err != nil {
+		return Empty[T](), err
+	}
+	return newCons[T](c.consHead, tail), nil
 
-func (n nil[T]) head() T {
+}
+
+type empty[T any] struct{}
+
+func (n empty[T]) head() T {
 	return *new(T)
 }
 
-func (n nil[T]) tail() List[T] {
+func (n empty[T]) tail() List[T] {
 	return Empty[T]()
 }
 
-func (n nil[T]) IsEmpty() bool {
+func (n empty[T]) IsEmpty() bool {
 	return true
 }
 
-func (n nil[T]) Length() int {
+func (n empty[T]) Length() int {
 	return 0
 }
 
-func (n nil[T]) Append(value T) List[T] {
+func (n empty[T]) Append(value T) List[T] {
 	return newCons[T](value, Empty[T]())
 }
 
-func (n nil[T]) AppendAll(elements []T) List[T] {
+func (n empty[T]) AppendAll(elements []T) List[T] {
 	result := Empty[T]()
 	for _, element := range elements {
 		result = result.Append(element)
@@ -138,14 +160,21 @@ func (n nil[T]) AppendAll(elements []T) List[T] {
 	return result
 }
 
-func (n nil[T]) Filter(predicate func(T) bool) List[T] {
+func (n empty[T]) Filter(predicate func(T) bool) List[T] {
 	return n
 }
 
-func (n nil[T]) Remove(value T) List[T] {
+func (n empty[T]) Remove(value T) List[T] {
 	return n
 }
 
-func (n nil[T]) RemovePredicate(predicate func(T) bool) List[T] {
+func (n empty[T]) RemovePredicate(predicate func(T) bool) List[T] {
 	return n
+}
+
+func (n empty[T]) Insert(index int, value T) (List[T], error) {
+	if index != 0 {
+		return n, fmt.Errorf("index out of range %d on empty List", index)
+	}
+	return newCons[T](value, n), nil
 }

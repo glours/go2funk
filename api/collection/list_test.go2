@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	_ List[int] = nil[int]{}
+	_ List[int] = empty[int]{}
 	_ List[int] = cons[int]{
 		consHead: 10,
 		consTail: Empty[int](),
 		length:   1,
 	}
-	empty                List[int] = Empty[int]()
+	emptyList            List[int] = Empty[int]()
 	singleElementList    List[int] = Of[int](10)
 	multipleElementsList List[int] = OfSlice[int]([]int{1, 2, 3, 4, 5})
 
@@ -29,7 +29,7 @@ func TestHead(t *testing.T) {
 	}{
 		{
 			name:     "Empty List",
-			value:    empty,
+			value:    emptyList,
 			expected: 0,
 		},
 		{
@@ -60,13 +60,13 @@ func TestTail(t *testing.T) {
 	}{
 		{
 			name:     "Empty List",
-			value:    empty,
-			expected: empty,
+			value:    emptyList,
+			expected: emptyList,
 		},
 		{
 			name:     "Single Element List",
 			value:    singleElementList,
-			expected: empty,
+			expected: emptyList,
 		},
 		{
 			name:     "Multiple Elements List",
@@ -91,7 +91,7 @@ func TestIsEmpty(t *testing.T) {
 	}{
 		{
 			name:    "Empty List",
-			value:   empty,
+			value:   emptyList,
 			isEmpty: true,
 		},
 		{
@@ -122,7 +122,7 @@ func TestLenght(t *testing.T) {
 	}{
 		{
 			name:   "Empty List",
-			value:  empty,
+			value:  emptyList,
 			length: 0,
 		},
 		{
@@ -153,7 +153,7 @@ func TestAppend(t *testing.T) {
 	}{
 		{
 			name:   "Empty List",
-			value:  empty,
+			value:  emptyList,
 			length: 1,
 		},
 		{
@@ -185,7 +185,7 @@ func TestAppendAll(t *testing.T) {
 	}{
 		{
 			name:   "Empty List",
-			value:  empty,
+			value:  emptyList,
 			length: 3,
 		},
 		{
@@ -220,7 +220,7 @@ func TestMapList(t *testing.T) {
 	}{
 		{
 			name:     "Empty List",
-			value:    empty,
+			value:    emptyList,
 			expected: Empty[string](),
 		},
 		{
@@ -252,7 +252,7 @@ func TestFilterList(t *testing.T) {
 	}{
 		{
 			name:     "Empty List",
-			value:    empty,
+			value:    emptyList,
 			expected: Empty[int](),
 		},
 		{
@@ -285,7 +285,7 @@ func TestRemoveFromList(t *testing.T) {
 	}{
 		{
 			name:          "Empty List",
-			original:      empty,
+			original:      emptyList,
 			valueToRemove: 10,
 			expected:      Empty[int](),
 		},
@@ -327,7 +327,7 @@ func TestRemoveFromListWithPredicate(t *testing.T) {
 	}{
 		{
 			name:      "Empty List",
-			original:  empty,
+			original:  emptyList,
 			predicate: evenPredicate,
 			expected:  Empty[int](),
 		},
@@ -355,6 +355,108 @@ func TestRemoveFromListWithPredicate(t *testing.T) {
 			result := testCase.original.RemovePredicate(testCase.predicate)
 			if result != testCase.expected {
 				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+			}
+		})
+	}
+}
+
+func TestInsertInList(t *testing.T) {
+	testCases := []struct {
+		name       string
+		original   List[int]
+		index      int
+		expected   List[int]
+		checkError bool
+	}{
+		{
+			name:       "Empty List index 0",
+			original:   emptyList,
+			index:      0,
+			expected:   Of[int](7),
+			checkError: false,
+		},
+		{
+			name:       "Empty List negative index",
+			original:   emptyList,
+			index:      -1,
+			expected:   Empty[int](),
+			checkError: true,
+		},
+		{
+			name:       "Empty List index > 0",
+			original:   emptyList,
+			index:      1,
+			expected:   Empty[int](),
+			checkError: true,
+		},
+		{
+			name:       "Single Element List index 0",
+			original:   singleElementList,
+			index:      0,
+			expected:   OfSlice[int]([]int{7, 10}),
+			checkError: false,
+		},
+		{
+			name:       "Single Element List index 1",
+			original:   singleElementList,
+			index:      1,
+			expected:   OfSlice[int]([]int{10, 7}),
+			checkError: false,
+		},
+		{
+			name:       "Single Element List index > 1",
+			original:   singleElementList,
+			index:      2,
+			expected:   Empty[int](),
+			checkError: true,
+		},
+		{
+			name:       "Single Element List index < 0",
+			original:   singleElementList,
+			index:      -1,
+			expected:   Empty[int](),
+			checkError: true,
+		},
+		{
+			name:       "Multiple Elements List index 0",
+			original:   multipleElementsList,
+			index:      0,
+			expected:   OfSlice[int]([]int{7, 1, 2, 3, 4, 5}),
+			checkError: false,
+		},
+		{
+			name:       "Multiple Elements List index 3",
+			original:   multipleElementsList,
+			index:      3,
+			expected:   OfSlice[int]([]int{1, 2, 3, 7, 4, 5}),
+			checkError: false,
+		},
+		{
+			name:       "Multiple Elements List index out of bounds",
+			original:   multipleElementsList,
+			index:      7,
+			expected:   Empty[int](),
+			checkError: true,
+		},
+		{
+			name:       "Multiple Elements List negative index",
+			original:   multipleElementsList,
+			index:      -1,
+			expected:   Empty[int](),
+			checkError: true,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result, err := testCase.original.Insert(testCase.index, 7)
+			if testCase.checkError {
+				if err == nil {
+					t.Errorf("index of range error was expected")
+				}
+			} else {
+				if result != testCase.expected {
+					t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+				}
 			}
 		})
 	}
