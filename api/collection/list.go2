@@ -17,6 +17,7 @@ type List[T any] interface {
 	Remove(value T) List[T]
 	RemovePredicate(func(T) bool) List[T]
 	Insert(int, T) (List[T], error)
+	Reverse() List[T]
 }
 
 func MapList[T any, U any](list List[T], mapper func(T) U) List[U] {
@@ -130,6 +131,15 @@ func (c cons[T]) Insert(index int, value T) (List[T], error) {
 
 }
 
+func (c cons[T]) Reverse() List[T] {
+	if c.IsEmpty() || c.length == 1 {
+		return c
+	}
+	value := c.consHead
+	list := c.consTail.Reverse()
+	return list.Append(value)
+}
+
 type empty[T any] struct{}
 
 func (n empty[T]) head() T {
@@ -177,4 +187,8 @@ func (n empty[T]) Insert(index int, value T) (List[T], error) {
 		return n, fmt.Errorf("index out of range %d on empty List", index)
 	}
 	return newCons[T](value, n), nil
+}
+
+func (n empty[T]) Reverse() List[T] {
+	return n
 }

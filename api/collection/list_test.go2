@@ -461,3 +461,35 @@ func TestInsertInList(t *testing.T) {
 		})
 	}
 }
+
+func TestReverseList(t *testing.T) {
+	testCases := []struct {
+		name     string
+		original List[int]
+		expected List[int]
+	}{
+		{
+			name:     "Empty List",
+			original: emptyList,
+			expected: Empty[int](),
+		},
+		{
+			name:     "Single Element List",
+			original: singleElementList,
+			expected: Of[int](10),
+		},
+		{
+			name:     "Multiple Elements List",
+			original: multipleElementsList,
+			expected: OfSlice[int]([]int{5, 4, 3, 2, 1}),
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := testCase.original.Reverse()
+			if result != testCase.expected {
+				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+			}
+		})
+	}
+}
