@@ -15,6 +15,10 @@ var (
 	empty                List[int] = Empty[int]()
 	singleElementList    List[int] = Of[int](10)
 	multipleElementsList List[int] = OfSlice[int]([]int{1, 2, 3, 4, 5})
+
+	evenPredicate = func(value int) bool {
+		return value%2 == 0
+	}
 )
 
 func TestHead(t *testing.T) {
@@ -241,9 +245,6 @@ func TestMapList(t *testing.T) {
 }
 
 func TestFilterList(t *testing.T) {
-	var evenPredicate = func (value int) bool {
-		return value % 2 == 0
-	}
 	testCases := []struct {
 		name     string
 		value    List[int]
@@ -268,6 +269,90 @@ func TestFilterList(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.value.Filter(evenPredicate)
+			if result != testCase.expected {
+				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+			}
+		})
+	}
+}
+
+func TestRemoveFromList(t *testing.T) {
+	testCases := []struct {
+		name          string
+		original      List[int]
+		valueToRemove int
+		expected      List[int]
+	}{
+		{
+			name:          "Empty List",
+			original:      empty,
+			valueToRemove: 10,
+			expected:      Empty[int](),
+		},
+		{
+			name:          "Single Element List with element removed",
+			original:      singleElementList,
+			valueToRemove: 10,
+			expected:      Empty[int](),
+		},
+		{
+			name:          "Single Element List without element removed",
+			original:      singleElementList,
+			valueToRemove: 5,
+			expected:      Of[int](10),
+		},
+		{
+			name:          "Multiple Elements List",
+			original:      multipleElementsList,
+			valueToRemove: 3,
+			expected:      OfSlice[int]([]int{1, 2, 4, 5}),
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := testCase.original.Remove(testCase.valueToRemove)
+			if result != testCase.expected {
+				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
+			}
+		})
+	}
+}
+
+func TestRemoveFromListWithPredicate(t *testing.T) {
+	testCases := []struct {
+		name      string
+		original  List[int]
+		predicate func(value int) bool
+		expected  List[int]
+	}{
+		{
+			name:      "Empty List",
+			original:  empty,
+			predicate: evenPredicate,
+			expected:  Empty[int](),
+		},
+		{
+			name:      "Single Element List with element removed",
+			original:  singleElementList,
+			predicate: evenPredicate,
+			expected:  Empty[int](),
+		},
+		{
+			name:      "Single Element List without element removed",
+			original:  singleElementList,
+			predicate: func(value int) bool { return value == 5 },
+			expected:  Of[int](10),
+		},
+		{
+			name:      "Multiple Elements List",
+			original:  multipleElementsList,
+			predicate: evenPredicate,
+			expected:  OfSlice[int]([]int{1, 3, 5}),
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := testCase.original.RemovePredicate(testCase.predicate)
 			if result != testCase.expected {
 				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
 			}

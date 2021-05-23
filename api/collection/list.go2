@@ -1,5 +1,7 @@
 package collection
 
+import "reflect"
+
 // List is a immutable interface of List collection.
 type List[T any] interface {
 	head() T
@@ -9,6 +11,8 @@ type List[T any] interface {
 	AppendAll(values []T) List[T]
 	Length() int
 	Filter(func(T) bool) List[T]
+	Remove(value T) List[T]
+	RemovePredicate(func(T) bool) List[T]
 }
 
 func MapList[T any, U any](list List[T], mapper func(T) U) List[U] {
@@ -84,6 +88,26 @@ func (c cons[T]) Filter(predicate func(T) bool) List[T] {
 	return newCons(c.consTail.head(), c.consTail.tail()).Filter(predicate)
 }
 
+func (c cons[T]) Remove(value T) List[T] {
+	if !reflect.DeepEqual(c.consHead, value) {
+		return newCons(c.consHead, c.consTail.Remove(value))
+	}
+	if c.consTail.IsEmpty() {
+		return c.consTail
+	}
+	return newCons(c.consTail.head(), c.consTail.tail()).Remove(value)
+}
+
+func (c cons[T]) RemovePredicate(predicate func(T) bool) List[T] {
+	if !predicate(c.consHead) {
+		return newCons(c.consHead, c.consTail.RemovePredicate(predicate))
+	}
+	if c.consTail.IsEmpty() {
+		return c.consTail
+	}
+	return newCons(c.consTail.head(), c.consTail.tail()).RemovePredicate(predicate)
+}
+
 type nil[T any] struct{}
 
 func (n nil[T]) head() T {
@@ -116,5 +140,12 @@ func (n nil[T]) AppendAll(elements []T) List[T] {
 
 func (n nil[T]) Filter(predicate func(T) bool) List[T] {
 	return n
+}
 
+func (n nil[T]) Remove(value T) List[T] {
+	return n
+}
+
+func (n nil[T]) RemovePredicate(predicate func(T) bool) List[T] {
+	return n
 }
