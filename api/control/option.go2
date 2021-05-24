@@ -7,11 +7,18 @@ type Option[T any] interface {
 	Filter(func(T) bool) Option[T]
 }
 
-func MapOption[T any, U any](option Option[T], mapper func(T) U) Option[U] {
+func MapOption[T, U any](option Option[T], mapper func(T) U) Option[U] {
 	if option.IsEmpty() {
 		return None[U]{}
 	}
 	return Some[U]{mapper(option.OrElse(*new(T)))}
+}
+
+func FlatMapOption[T, U any](option Option[T], mapper func(T) Option[U]) Option[U] {
+	if option.IsEmpty() {
+		return Empty[U]()
+	}
+	return mapper(option.OrElse(*new(T)))
 }
 
 func Empty[T any]() Option[T] {
@@ -22,7 +29,7 @@ func Of[T any](value T) Option[T] {
 	return Some[T]{value}
 }
 
-type None[T any] struct { }
+type None[T any] struct{}
 
 func (n None[T]) IsEmpty() bool {
 	return true

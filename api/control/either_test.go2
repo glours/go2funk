@@ -7,11 +7,11 @@ import (
 )
 
 var (
-	defaultEitherError = errors.New("default Either error")
-	_ Either[error, int] = Right[error, int]{10}
-	_ Either[error, int] = Left[error, int]{defaultEitherError}
-	right Either[error, int] = RightOf[error, int](10)
-	left Either[error, int] = LeftOf[error, int](defaultEitherError)
+	defaultEitherError                    = errors.New("default Either error")
+	_                  Either[error, int] = Right[error, int]{10}
+	_                  Either[error, int] = Left[error, int]{defaultEitherError}
+	right              Either[error, int] = RightOf[error, int](10)
+	left               Either[error, int] = LeftOf[error, int](defaultEitherError)
 )
 
 func TestIsRight(t *testing.T) {
@@ -80,7 +80,7 @@ func TestEitherFilterOrElse(t *testing.T) {
 }
 
 func TestEitherFilter(t *testing.T) {
-	if right.Filter(EvenPredicate).IsEmpty(){
+	if right.Filter(EvenPredicate).IsEmpty() {
 		t.Error("should be a Some of Either")
 	}
 
@@ -95,7 +95,7 @@ func TestEitherFilter(t *testing.T) {
 }
 
 func TestMapEither(t *testing.T) {
-	var mapper = func (value int) string {
+	var mapper = func(value int) string {
 		return strconv.Itoa(value)
 	}
 	var mapRight Either[error, string] = MapEither(right, mapper)
@@ -103,7 +103,22 @@ func TestMapEither(t *testing.T) {
 		t.Errorf("value should be 10")
 	}
 
-	var mapLeft Either[error, string]= MapEither[error, int, string](left, mapper)
+	var mapLeft Either[error, string] = MapEither[error, int, string](left, mapper)
+	if mapLeft.IsRight() {
+		t.Errorf("should be an Left Either")
+	}
+}
+
+func TestFlatMapEither(t *testing.T) {
+	var mapper = func(value int) Either[error, string] {
+		return RightOf[error, string](strconv.Itoa(value))
+	}
+	var mapRight Either[error, string] = FlatMapEither(right, mapper)
+	if mapRight.GetOrElse("good") != "10" {
+		t.Errorf("value should be 10")
+	}
+
+	var mapLeft Either[error, string] = FlatMapEither[error, int, string](left, mapper)
 	if mapLeft.IsRight() {
 		t.Errorf("should be an Left Either")
 	}

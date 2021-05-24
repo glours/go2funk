@@ -1,19 +1,21 @@
 package control
+
 import (
 	"errors"
 	"strconv"
 	"testing"
 )
+
 var (
-	defaultTryError   = errors.New("default Try error")
-	nilCauseError     = errors.New("error cause should not be nil")
-	nilPredicateError = errors.New("predicate should not be nil")
-	_ Try[int] = Success[int]{10}
-	_ Try[int] = Failure[int]{cause: defaultTryError}
-	success Try[int] = SuccessOf[int](10)
-	failure Try[int] = FailureOf[int](defaultTryError)
- 	EvenPredicate = func (value int) bool {
-		return value % 2 == 0
+	defaultTryError            = errors.New("default Try error")
+	nilCauseError              = errors.New("error cause should not be nil")
+	nilPredicateError          = errors.New("predicate should not be nil")
+	_                 Try[int] = Success[int]{10}
+	_                 Try[int] = Failure[int]{cause: defaultTryError}
+	success           Try[int] = SuccessOf[int](10)
+	failure           Try[int] = FailureOf[int](defaultTryError)
+	EvenPredicate              = func(value int) bool {
+		return value%2 == 0
 	}
 )
 
@@ -28,11 +30,11 @@ func TestIsFailure(t *testing.T) {
 }
 
 func TestTryOf(t *testing.T) {
-	if TryOf(func()(int, error) { return 10, nil}).IsFailure() {
+	if TryOf(func() (int, error) { return 10, nil }).IsFailure() {
 		t.Error("should not be a failure")
 	}
 
-	if !TryOf(func()(int, error) {return 0, defaultTryError }).IsFailure() {
+	if !TryOf(func() (int, error) { return 0, defaultTryError }).IsFailure() {
 		t.Error("should not be a success")
 	}
 }
@@ -63,7 +65,7 @@ func TestTryFilterCheckParam(t *testing.T) {
 		t.Error("should return a Try with nil predicate cause")
 	}
 
-	_, err = success.Filter(EvenPredicate, nil).OrElseCause();
+	_, err = success.Filter(EvenPredicate, nil).OrElseCause()
 	if err.Error() != nilCauseError.Error() {
 		t.Error("should return a Try with nil cause error")
 	}
@@ -73,7 +75,7 @@ func TestTryFilterCheckParam(t *testing.T) {
 		t.Error("should return a Try with nil predicate cause")
 	}
 
-	_, err = failure.Filter(EvenPredicate, nil).OrElseCause();
+	_, err = failure.Filter(EvenPredicate, nil).OrElseCause()
 	if err.Error() != nilCauseError.Error() {
 		t.Error("should return a Try with nil cause error")
 	}
@@ -90,7 +92,7 @@ func TestTryFilter(t *testing.T) {
 }
 
 func TestTryMap(t *testing.T) {
-	var mapper = func (value int) string {
+	var mapper = func(value int) string {
 		return strconv.Itoa(value)
 	}
 
@@ -99,6 +101,20 @@ func TestTryMap(t *testing.T) {
 	}
 
 	if MapTry[int, string](success, mapper).IsFailure() {
+		t.Error("result of MapTry function should be a success")
+	}
+}
+
+func TestTryFlatMap(t *testing.T) {
+	var mapper = func(value int) Try[string] {
+		return SuccessOf[string](strconv.Itoa(value))
+	}
+
+	if !FlatMapTry[int, string](failure, mapper).IsFailure() {
+		t.Error("result of MapTry function should be a failure")
+	}
+
+	if FlatMapTry[int, string](success, mapper).IsFailure() {
 		t.Error("result of MapTry function should be a success")
 	}
 }

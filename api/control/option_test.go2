@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	_ Option[int] = None[int]{}
-	_ Option[int] = Some[int]{value: 10}
-	_ Option[int] = Of[int](10)
-	_ Option[int] = Empty[int]()
+	_    Option[int] = None[int]{}
+	_    Option[int] = Some[int]{value: 10}
+	_    Option[int] = Of[int](10)
+	_    Option[int] = Empty[int]()
 	some Option[int] = Of(10)
-	none Option[int]= Empty[int]()
+	none Option[int] = Empty[int]()
 )
 
 func TestIsPresent(t *testing.T) {
@@ -36,7 +36,7 @@ func TestGetOrElse(t *testing.T) {
 }
 
 func TestGetOrError(t *testing.T) {
-	if _, err:= some.OrElseError(errors.New("should not be thrown")); err != nil {
+	if _, err := some.OrElseError(errors.New("should not be thrown")); err != nil {
 		t.Error(err)
 	}
 
@@ -46,8 +46,8 @@ func TestGetOrError(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	var evenPredicate = func (value int) bool {
-		return value % 2 == 0
+	var evenPredicate = func(value int) bool {
+		return value%2 == 0
 	}
 	if some.Filter(evenPredicate).IsEmpty() {
 		t.Error("result of filtering should not be empty")
@@ -59,7 +59,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestOptionMap(t *testing.T) {
-	var mapper = func (value int) string {
+	var mapper = func(value int) string {
 		return strconv.Itoa(value)
 	}
 
@@ -69,5 +69,19 @@ func TestOptionMap(t *testing.T) {
 
 	if MapOption[int, string](some, mapper).IsEmpty() {
 		t.Error("result of MapOption function should not be empty")
+	}
+}
+
+func TestOptionFlatMap(t *testing.T) {
+	var mapper = func(value int) Option[string] {
+		return Of[string](strconv.Itoa(value))
+	}
+
+	if !FlatMapOption[int, string](none, mapper).IsEmpty() {
+		t.Error("result of FlatMapOption function should be empty")
+	}
+
+	if FlatMapOption[int, string](some, mapper).IsEmpty() {
+		t.Error("result of FlatMapOption function should not be empty")
 	}
 }

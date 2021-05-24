@@ -3,27 +3,33 @@ package control
 type Either[L, R any] interface {
 	IsLeft() bool
 	IsRight() bool
-	OrElse(Either[L,R]) Either[L, R]
+	OrElse(Either[L, R]) Either[L, R]
 	GetOrElse(other R) R
 	GetLeftOrElse(other L) L
 	Swap() Either[R, L]
-	FilterOrElse(func(R) bool, Either[L,R]) Either[L,R]
-	Filter(func(R) bool) Option[Either[L,R]]
+	FilterOrElse(func(R) bool, Either[L, R]) Either[L, R]
+	Filter(func(R) bool) Option[Either[L, R]]
 }
 
 func MapEither[L, R, U any](either Either[L, R], mapper func(R) U) Either[L, U] {
 	if either.IsRight() {
 		return Right[L, U]{mapper(either.GetOrElse(*new(R)))}
 	}
-	return Left[L, U]{ either.GetLeftOrElse(*new(L))}
+	return Left[L, U]{either.GetLeftOrElse(*new(L))}
 }
 
+func FlatMapEither[L, R, U any](either Either[L, R], mapper func(R) Either[L, U]) Either[L, U] {
+	if either.IsRight() {
+		return mapper(either.GetOrElse(*new(R)))
+	}
+	return Left[L, U]{either.GetLeftOrElse(*new(L))}
+}
 
 func RightOf[L, R any](value R) Either[L, R] {
 	return Right[L, R]{value}
 }
 
-func LeftOf[L,R any](value L) Either[L, R] {
+func LeftOf[L, R any](value L) Either[L, R] {
 	return Left[L, R]{value}
 }
 

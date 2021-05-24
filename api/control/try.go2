@@ -16,6 +16,13 @@ func MapTry[T, U any](try Try[T], mapper func(T) U) Try[U] {
 	return Success[U]{mapper(try.OrElse(*new(T)))}
 }
 
+func FlatMapTry[T, U any](try Try[T], mapper func(T) Try[U]) Try[U] {
+	if try.IsFailure() {
+		return Failure[U]{}
+	}
+	return mapper(try.OrElse(*new(T)))
+}
+
 func TryOf[A any](lambda func() (A, error)) Try[A] {
 	value, err := lambda()
 	if err != nil {
@@ -60,9 +67,10 @@ func (s Success[A]) Filter(predicate func(A) bool, cause error) Try[A] {
 	return FailureOf[A](cause)
 }
 
-type Failure[A any] struct{
+type Failure[A any] struct {
 	cause error
 }
+
 func (f Failure[A]) IsFailure() bool {
 	return true
 }
