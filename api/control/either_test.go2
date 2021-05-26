@@ -2,6 +2,7 @@ package control
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -65,16 +66,20 @@ func TestEitherGetOrElse(t *testing.T) {
 }
 
 func TestEitherFilterOrElse(t *testing.T) {
-	if right.FilterOrElse(EvenPredicate, left).IsLeft() {
+	transform := func(value int) error {
+		return fmt.Errorf("doesn't pass the EvenPredicate")
+	}
+
+	if right.FilterOrElse(EvenPredicate, transform).IsLeft() {
 		t.Error("should not be a Left")
 	}
 
-	if left.FilterOrElse(EvenPredicate, right).IsRight() {
+	if left.FilterOrElse(EvenPredicate, transform).IsRight() {
 		t.Error("should not be a Right")
 	}
 
 	odd := RightOf[error, int](11)
-	if odd.FilterOrElse(EvenPredicate, left).IsRight() {
+	if odd.FilterOrElse(EvenPredicate, transform).IsRight() {
 		t.Error("should not be a Right")
 	}
 }
