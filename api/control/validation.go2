@@ -9,6 +9,7 @@ type Validation[E, T any] interface {
 	ErrorOrElse(err E) E
 	Swap() Validation[T, E]
 	ToEither() Either[E, T]
+	Filter(func(T) bool) Option[Validation[E, T]]
 }
 
 // ValidOf returns a Validation[E,T] with a valid value T.
@@ -82,6 +83,14 @@ func (v Valid[E, T]) ToEither() Either[E, T] {
 	return RightOf[E, T](v.value)
 }
 
+// Filter returns a Some Option with the current Validation if value matches the predicate and an Empty Option otherwise.
+func (v Valid[E, T]) Filter(predicate func(T) bool) Option[Validation[E, T]] {
+	if predicate(v.value) {
+		return Of[Validation[E, T]](v)
+	}
+	return Empty[Validation[E, T]]()
+}
+
 // Invalid is an implementation of Validation with a invalid E value.
 type Invalid[E, T any] struct {
 	error E
@@ -123,4 +132,10 @@ func (i Invalid[E, T]) Swap() Validation[T, E] {
 // Invalid implementation returns a Left Either with a value of type E
 func (i Invalid[E, T]) ToEither() Either[E, T] {
 	return LeftOf[E, T](i.error)
+}
+
+// Filter returns a Some Option with the current Validation if value matches the predicate and an Empty Option otherwise.
+// Invalid implementation always return Some Option.
+func (i Invalid[E, T]) Filter(func(T) bool) Option[Validation[E, T]] {
+	return Of[Validation[E, T]](i)
 }

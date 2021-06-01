@@ -140,3 +140,18 @@ func TestToEither(t *testing.T) {
 		t.Errorf("should be Left not Right")
 	}
 }
+
+func TestValidationFilter(t *testing.T) {
+	if valid.Filter(EvenPredicate).IsEmpty() {
+		t.Error("should be a Some of Validation")
+	}
+
+	if invalid.Filter(EvenPredicate).IsEmpty() {
+		t.Error("should be a Some of Validation")
+	}
+
+	odd := ValidOf[error, int](11)
+	if !odd.Filter(EvenPredicate).IsEmpty() {
+		t.Error("should be a Empty of Validation")
+	}
+}
