@@ -1,0 +1,142 @@
+package control
+
+import (
+	"errors"
+	"fmt"
+	"regexp"
+	"testing"
+	"time"
+)
+
+type User struct {
+	firstName string
+	lastName  string
+	birthdate time.Time
+}
+
+type UserValidator struct {
+	isAlpha *regexp.Regexp
+	minAge  int
+}
+
+func (u *UserValidator) validateUser(fistName string, lastName string, birthdate time.Time) {
+
+}
+
+func (u *UserValidator) validateFirstName(firstName string) Validation[error, string] {
+	if u.isAlpha.MatchString(firstName) {
+		return ValidOf[error, string](firstName)
+	}
+	return InvalidOf[error, string](fmt.Errorf("user first name is not valid %s", firstName))
+}
+
+func (u *UserValidator) validateLastName(lastName string) Validation[error, string] {
+	if u.isAlpha.MatchString(lastName) {
+		return ValidOf[error, string](lastName)
+	}
+	return InvalidOf[error, string](fmt.Errorf("user last name is not valid %s", lastName))
+}
+
+func (u *UserValidator) validateAge(birthdate time.Time) Validation[error, time.Time] {
+	age := (time.Now().Sub(birthdate).Hours() / 24) / 365
+	if int(age) >= u.minAge {
+		return ValidOf[error, time.Time](birthdate)
+	}
+	return InvalidOf[error, time.Time](fmt.Errorf("user is to young %d", int(age)))
+}
+
+func NewUserValidator() UserValidator {
+	return UserValidator{
+		isAlpha: regexp.MustCompile(`^[a-zA-Z]+$`),
+		minAge:  18,
+	}
+}
+
+var (
+	defaultError                        = errors.New("default error Validation")
+	_            Validation[error, int] = Valid[error, int]{10}
+	_            Validation[error, int] = Invalid[error, int]{defaultError}
+	valid        Validation[error, int] = ValidOf[error, int](10)
+	invalid      Validation[error, int] = InvalidOf[error, int](defaultError)
+)
+
+func TestIsValid(t *testing.T) {
+	if !valid.IsValid() {
+		t.Errorf("should be Valid not Invalid")
+	}
+
+	if invalid.IsValid() {
+		t.Errorf("should be Invalid not Valid")
+	}
+}
+
+func TestIsInvalid(t *testing.T) {
+	if valid.IsInvalid() {
+		t.Errorf("should be Valid not Invalid")
+	}
+
+	if !invalid.IsInvalid() {
+		t.Errorf("should be Invalid not Valid")
+	}
+}
+
+func TestValidationOrElse(t *testing.T) {
+	if valid.OrElse(20) != 10 {
+		t.Errorf("value should be 10")
+	}
+
+	if invalid.OrElse(20) != 20 {
+		t.Errorf("value should be 20")
+	}
+}
+
+func TestValidationErrorOrElse(t *testing.T) {
+	localError := errors.New("error for ErrorOrElse")
+	if err := valid.ErrorOrElse(localError); err != localError {
+		t.Errorf("error should be %s but is %s", localError.Error(), err)
+	}
+
+	if err := invalid.ErrorOrElse(localError); err == localError {
+		t.Errorf("error should be %s but is %s", defaultError.Error(), err)
+	}
+}
+
+func TestValidationSwap(t *testing.T) {
+	if valid.Swap().IsValid() {
+		t.Errorf("should be Invalid not Valid")
+	}
+
+	if invalid.Swap().IsInvalid() {
+		t.Errorf("should be Valid not Invalid")
+	}
+}
+
+func TestFromTry(t *testing.T) {
+	if FromTry[error, int](success).IsInvalid() {
+		t.Errorf("should be Valid not Invalid")
+	}
+
+	if FromTry[error, int](failure).IsValid() {
+		t.Errorf("should be Invalid not Valid")
+	}
+}
+
+func TestFromEither(t *testing.T) {
+	if FromEither[error, int](right).IsInvalid() {
+		t.Errorf("should be Valid not Invalid")
+	}
+
+	if FromEither[error, int](left).IsValid() {
+		t.Errorf("should be Invalid not Valid")
+	}
+}
+
+func TestToEither(t *testing.T) {
+	if valid.ToEither().IsLeft() {
+		t.Errorf("should be Right not Left")
+	}
+
+	if invalid.ToEither().IsRight() {
+		t.Errorf("should be Left not Right")
+	}
+}

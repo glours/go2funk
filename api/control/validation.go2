@@ -1,0 +1,126 @@
+// Package control provides control structures such as Option, Try or Either...
+package control
+
+// Validation control type returns a valid value of type T or all errors accumulated in a value of type T.
+type Validation[E, T any] interface {
+	IsValid() bool
+	IsInvalid() bool
+	OrElse(value T) T
+	ErrorOrElse(err E) E
+	Swap() Validation[T, E]
+	ToEither() Either[E, T]
+}
+
+// ValidOf returns a Validation[E,T] with a valid value T.
+func ValidOf[E, T any](value T) Validation[E, T] {
+	return Valid[E, T]{value}
+}
+
+// InvalidOf returns a Validation[E,T] with a invalid value E.
+func InvalidOf[E, T any](err E) Validation[E, T] {
+	return Invalid[E, T]{err}
+}
+
+// FromTry returns a Validation[error, T] with a T value if Try is a success or
+// returns an Invalid instance if Try is a Failure.
+func FromTry[E error, T any](try Try[T]) Validation[error, T] {
+	if try.IsFailure() {
+		_, err := try.OrElseCause()
+		return InvalidOf[error, T](err)
+	}
+	return ValidOf[error, T](try.OrElse(*new(T)))
+}
+
+// FromEither returns a Validation[E, T] with the T value if Either is Right or E value if Left.
+func FromEither[E, T any](either Either[E, T]) Validation[E, T] {
+	if either.IsRight() {
+		return ValidOf[E, T](either.GetOrElse(*new(T)))
+	}
+	return InvalidOf[E, T](either.GetLeftOrElse(*new(E)))
+}
+
+// Valid is an implementation of Validation with a valid T value.
+type Valid[E, T any] struct {
+	value T
+}
+
+// IsValid checks if the current validation is valid or not.
+// Valid implementation always returns true
+func (v Valid[E, T]) IsValid() bool {
+	return true
+}
+
+// IsInvalid checks if the current validation is invalid or not.
+// Valid implementation always returns false
+func (v Valid[E, T]) IsInvalid() bool {
+	return false
+}
+
+// OrElse returns the value of the current Validation if valid or the value passed as parameter for invalid one.
+// Valid implementation always returns the value of the Validation.
+func (v Valid[E, T]) OrElse(value T) T {
+	return v.value
+}
+
+// ErrorOrElse returns the "error" E of the current Validation if invalid
+// or the value passed as parameter if the Validation is a valid one.
+// Valid implementation always returns the value of type E passed as parameter.
+func (v Valid[E, T]) ErrorOrElse(err E) E {
+	return err
+}
+
+// Swap converts a Valid Validation to an Invalid one and vis versa.
+// Valid implementation returns a new Invalid Validation setup with the previous valid value.
+func (v Valid[E, T]) Swap() Validation[T, E] {
+	return InvalidOf[T, E](v.value)
+}
+
+// ToEither returns an Either with a right value if the Validation is Valid
+// Or an Either with a left value if the Validation is invalid.
+// Valid implementation returns a Right Either with a value of type T
+func (v Valid[E, T]) ToEither() Either[E, T] {
+	return RightOf[E, T](v.value)
+}
+
+// Invalid is an implementation of Validation with a invalid E value.
+type Invalid[E, T any] struct {
+	error E
+}
+
+// IsValid checks if the current validation is valid or not.
+// Invalid implementation always returns false
+func (i Invalid[E, T]) IsValid() bool {
+	return false
+}
+
+// IsInvalid checks if the current validation is invalid or not.
+// Invalid implementation always returns true
+func (i Invalid[E, T]) IsInvalid() bool {
+	return true
+}
+
+// OrElse returns the value of the current Validation if valid or the value passed as parameter for invalid one.
+// Invalid implementation always returns the value passed as parameter.
+func (i Invalid[E, T]) OrElse(value T) T {
+	return value
+}
+
+// ErrorOrElse returns the "error" E of the current Validation if invalid
+// or the value passed as parameter if the Validation is a valid one.
+// Invalid implementation always returns the value of the current Validation.
+func (i Invalid[E, T]) ErrorOrElse(err E) E {
+	return i.error
+}
+
+// Swap converts a Valid Validation to an Invalid one and vis versa.
+// Invalid implementation returns a new Valid Validation setup with the previous invalid value.
+func (i Invalid[E, T]) Swap() Validation[T, E] {
+	return ValidOf[T, E](i.error)
+}
+
+// ToEither returns an Either with a right value if the Validation is Valid
+// Or an Either with a left value if the Validation is invalid.
+// Invalid implementation returns a Left Either with a value of type E
+func (i Invalid[E, T]) ToEither() Either[E, T] {
+	return LeftOf[E, T](i.error)
+}
