@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -153,5 +154,20 @@ func TestValidationFilter(t *testing.T) {
 	odd := ValidOf[error, int](11)
 	if !odd.Filter(EvenPredicate).IsEmpty() {
 		t.Error("should be a Empty of Validation")
+	}
+}
+
+func TestMapValidation(t *testing.T) {
+	var mapper = func(value int) string {
+		return strconv.Itoa(value)
+	}
+	var mapValid Validation[error, string] = MapValidation[error, int, string](valid, mapper)
+	if mapValid.OrElse("good") != "10" {
+		t.Errorf("value should be 10")
+	}
+
+	var mapInvalid Validation[error, string] = MapValidation[error, int, string](invalid, mapper)
+	if mapInvalid.IsValid() {
+		t.Errorf("should be an Invalid Validation")
 	}
 }

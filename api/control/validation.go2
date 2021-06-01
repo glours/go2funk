@@ -40,6 +40,15 @@ func FromEither[E, T any](either Either[E, T]) Validation[E, T] {
 	return InvalidOf[E, T](either.GetLeftOrElse(*new(E)))
 }
 
+// MapValidation maps the valid value of a Validation[E, T] to a new Validation with a valid element of type U.
+// the mapper function should take a T value and return a U value.
+func MapValidation[E, T, U any](validation Validation[E, T], mapper func(T) U) Validation[E, U] {
+	if validation.IsValid() {
+		return Valid[E, U]{mapper(validation.OrElse(*new(T)))}
+	}
+	return Invalid[E, U]{validation.ErrorOrElse(*new(E))}
+}
+
 // Valid is an implementation of Validation with a valid T value.
 type Valid[E, T any] struct {
 	value T
