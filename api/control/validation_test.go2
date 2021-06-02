@@ -201,3 +201,21 @@ func TestFlatMapValidation(t *testing.T) {
 		t.Errorf("should be an Invalid Validation")
 	}
 }
+
+func TestFoldValidation(t *testing.T) {
+	var mapperValid = func(value int) string {
+		return strconv.Itoa(value)
+	}
+	var mapperInvalid = func(err error) string {
+		return err.Error()
+	}
+	var foldValid = FoldValidation(valid, mapperValid, mapperInvalid)
+	if foldValid != "10" {
+		t.Errorf("value should be 10")
+	}
+
+	var foldInvalid = FoldValidation(invalid, mapperValid, mapperInvalid)
+	if foldInvalid != defaultError.Error() {
+		t.Errorf("value should be %s but is %s", foldInvalid, defaultError.Error())
+	}
+}

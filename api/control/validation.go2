@@ -67,6 +67,14 @@ func FlatMapValidation[E, T, U any](validation Validation[E, T], mapper func(T) 
 	return Invalid[E, U]{validation.ErrorOrElse(*new(E))}
 }
 
+// Fold transforms this Validation[E, T] to a U type value.
+func FoldValidation[E, T, U any](validation Validation[E, T], mapperValid func(T) U, mapperInvalid func(E) U) U {
+	if validation.IsValid() {
+		return mapperValid(validation.OrElse(*new(T)))
+	}
+	return mapperInvalid(validation.ErrorOrElse(*new(E)))
+}
+
 // Valid is an implementation of Validation with a valid T value.
 type Valid[E, T any] struct {
 	value T
