@@ -49,6 +49,15 @@ func MapValidation[E, T, U any](validation Validation[E, T], mapper func(T) U) V
 	return Invalid[E, U]{validation.ErrorOrElse(*new(E))}
 }
 
+// MapErrorValidation maps the invalid value of a Validation[E, T] to a new Validation with a invalid element of type U.
+// the mapper function should take a E value and return a U value.
+func MapErrorValidation[E, T, U any](validation Validation[E, T], mapper func(E) U) Validation[U, T] {
+	if validation.IsInvalid() {
+		return Invalid[U, T]{mapper(validation.ErrorOrElse(*new(E)))}
+	}
+	return Valid[U, T]{validation.OrElse(*new(T))}
+}
+
 // Valid is an implementation of Validation with a valid T value.
 type Valid[E, T any] struct {
 	value T

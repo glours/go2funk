@@ -171,3 +171,18 @@ func TestMapValidation(t *testing.T) {
 		t.Errorf("should be an Invalid Validation")
 	}
 }
+
+func TestMapErrorValidation(t *testing.T) {
+	var mapper = func(value error) string {
+		return value.Error()
+	}
+	var mapErrorValid Validation[string, int] = MapErrorValidation[error, int, string](valid, mapper)
+	if mapErrorValid.OrElse(20) != 10 {
+		t.Errorf("value should be 10")
+	}
+
+	var mapInvalid Validation[string, int] = MapErrorValidation[error, int, string](invalid, mapper)
+	if mapInvalid.IsValid() {
+		t.Errorf("should be an Invalid Validation")
+	}
+}
