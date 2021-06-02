@@ -161,12 +161,12 @@ func TestMapValidation(t *testing.T) {
 	var mapper = func(value int) string {
 		return strconv.Itoa(value)
 	}
-	var mapValid Validation[error, string] = MapValidation[error, int, string](valid, mapper)
+	var mapValid = MapValidation[error, int, string](valid, mapper)
 	if mapValid.OrElse("good") != "10" {
 		t.Errorf("value should be 10")
 	}
 
-	var mapInvalid Validation[error, string] = MapValidation[error, int, string](invalid, mapper)
+	var mapInvalid = MapValidation[error, int, string](invalid, mapper)
 	if mapInvalid.IsValid() {
 		t.Errorf("should be an Invalid Validation")
 	}
@@ -176,13 +176,28 @@ func TestMapErrorValidation(t *testing.T) {
 	var mapper = func(value error) string {
 		return value.Error()
 	}
-	var mapErrorValid Validation[string, int] = MapErrorValidation[error, int, string](valid, mapper)
+	var mapErrorValid = MapErrorValidation[error, int, string](valid, mapper)
 	if mapErrorValid.OrElse(20) != 10 {
 		t.Errorf("value should be 10")
 	}
 
-	var mapInvalid Validation[string, int] = MapErrorValidation[error, int, string](invalid, mapper)
+	var mapInvalid = MapErrorValidation[error, int, string](invalid, mapper)
 	if mapInvalid.IsValid() {
+		t.Errorf("should be an Invalid Validation")
+	}
+}
+
+func TestFlatMapValidation(t *testing.T) {
+	var mapper = func(value int) Validation[error, string] {
+		return ValidOf[error, string](strconv.Itoa(value))
+	}
+	var flatMapValid = FlatMapValidation(valid, mapper)
+	if flatMapValid.OrElse("good") != "10" {
+		t.Errorf("value should be 10")
+	}
+
+	var flatMapInvalid = FlatMapValidation(invalid, mapper)
+	if flatMapInvalid.IsValid() {
 		t.Errorf("should be an Invalid Validation")
 	}
 }

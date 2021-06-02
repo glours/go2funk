@@ -58,6 +58,15 @@ func MapErrorValidation[E, T, U any](validation Validation[E, T], mapper func(E)
 	return Valid[U, T]{validation.OrElse(*new(T))}
 }
 
+// FlatMapValidation maps the valid value of a Validation[E, T] to a new Validation with a valid element of type U.
+// the mapper function should take a T value and return a Validation[E, U] value.
+func FlatMapValidation[E, T, U any](validation Validation[E, T], mapper func(T) Validation[E, U]) Validation[E, U] {
+	if validation.IsValid() {
+		return mapper(validation.OrElse(*new(T)))
+	}
+	return Invalid[E, U]{validation.ErrorOrElse(*new(E))}
+}
+
 // Valid is an implementation of Validation with a valid T value.
 type Valid[E, T any] struct {
 	value T
