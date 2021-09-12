@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strconv"
 	"testing"
+
+	"gotest.tools/v3/assert"
 )
 
 var (
@@ -16,46 +18,30 @@ var (
 )
 
 func TestIsPresent(t *testing.T) {
-	if some.IsEmpty() {
-		t.Errorf("A value should be present!")
-	}
-
-	if !none.IsEmpty() {
-		t.Errorf("No value should be present!")
-	}
+	assert.Assert(t, !some.IsEmpty(), "A value should be present!")
+	assert.Assert(t, none.IsEmpty(), "No value should be present!")
 }
 
 func TestGetOrElse(t *testing.T) {
-	if some.OrElse(20) != 10 {
-		t.Errorf("Value should be 10 not 20")
-	}
-
-	if none.OrElse(20) != 20 {
-		t.Errorf("Value should be 20!")
-	}
+	assert.Equal(t, some.OrElse(20), 10, "Value should be 10 not 20")
+	assert.Equal(t, none.OrElse(20), 20, "Value should be 20!")
 }
 
 func TestGetOrError(t *testing.T) {
-	if _, err := some.OrElseError(errors.New("should not be thrown")); err != nil {
-		t.Error(err)
-	}
+	_, err := some.OrElseError(errors.New("should not be thrown"))
+	assert.NilError(t, err)
 
-	if _, err := none.OrElseError(errors.New("should return an error")); err == nil {
-		t.Error(err)
-	}
+	_, err = none.OrElseError(errors.New("should return an error"))
+	assert.Error(t, err, "should return an error")
 }
 
 func TestFilter(t *testing.T) {
 	var evenPredicate = func(value int) bool {
 		return value%2 == 0
 	}
-	if some.Filter(evenPredicate).IsEmpty() {
-		t.Error("result of filtering should not be empty")
-	}
 
-	if !none.Filter(evenPredicate).IsEmpty() {
-		t.Error("result of filtering should be empty")
-	}
+	assert.Assert(t, !some.Filter(evenPredicate).IsEmpty(), "result of filtering should not be empty")
+	assert.Assert(t, none.Filter(evenPredicate).IsEmpty(), "result of filtering should be empty")
 }
 
 func TestOptionMap(t *testing.T) {
@@ -63,25 +49,14 @@ func TestOptionMap(t *testing.T) {
 		return strconv.Itoa(value)
 	}
 
-	if !MapOption[int, string](none, mapper).IsEmpty() {
-		t.Error("result of MapOption function should be empty")
-	}
-
-	if MapOption[int, string](some, mapper).IsEmpty() {
-		t.Error("result of MapOption function should not be empty")
-	}
+	assert.Assert(t, !MapOption[int, string](some, mapper).IsEmpty(), "result of MapOption function should not be empty")
+	assert.Assert(t, MapOption[int, string](none, mapper).IsEmpty(),"result of MapOption function should be empty")
 }
 
 func TestOptionFlatMap(t *testing.T) {
 	var mapper = func(value int) Option[string] {
 		return Of[string](strconv.Itoa(value))
 	}
-
-	if !FlatMapOption[int, string](none, mapper).IsEmpty() {
-		t.Error("result of FlatMapOption function should be empty")
-	}
-
-	if FlatMapOption[int, string](some, mapper).IsEmpty() {
-		t.Error("result of FlatMapOption function should not be empty")
-	}
+	assert.Assert(t, !FlatMapOption[int, string](some, mapper).IsEmpty(), "result of FlatMapOption function should not be empty")
+	assert.Assert(t, FlatMapOption[int, string](none, mapper).IsEmpty(), "result of FlatMapOption function should be empty")
 }

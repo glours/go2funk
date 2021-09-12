@@ -40,7 +40,7 @@ var evenPredicate = func (value int) bool { return value % 2 == 0 }
 myList = MapList[int, string](myList.Filter(evenPredicate), mapper); 
 ```
 
-For more usage details check [tests](./api/collection/list_test.go2).
+For more usage details check [tests](./api/collection/list_test.go).
 
 ### Control types
 
@@ -60,7 +60,7 @@ var mapper = func (value int) string { return strconv.Itoa(value) }
 fmt.Println(MapOption(someOption, mapper)) // Print "10"
 ```
 
-For more usage details check [tests](./api/control/option_test.go2).
+For more usage details check [tests](./api/control/option_test.go).
 
 #### Try
 
@@ -83,7 +83,7 @@ fmt.Println(TryOf(failureLambda).IsFailure()) // Print true
 fmt.Println(TryOf(successLambda).IsFailure()) // Print false
 ```
 
-For more usage details check [tests](./api/control/try_test.go2).
+For more usage details check [tests](./api/control/try_test.go).
 
 #### Either
 
@@ -103,4 +103,4 @@ var mapRight Either[error, string] = MapEither(right, mapper)
 fmt.Println(mapRight.GetOrElse("good")) // Print "10"
 ```
 
-For more usage details check [tests](./api/control/either_test.go2).
+For more usage details check [tests](./api/control/either_test.go).

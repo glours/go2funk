@@ -3,6 +3,7 @@ package control
 import (
 	"errors"
 	"fmt"
+	"gotest.tools/v3/assert"
 	"strconv"
 	"testing"
 )
@@ -16,87 +17,47 @@ var (
 )
 
 func TestIsRight(t *testing.T) {
-	if !right.IsRight() {
-		t.Errorf("should be a Right not Left")
-	}
-
-	if left.IsRight() {
-		t.Errorf("should be a Left not Right")
-	}
+	assert.Assert(t, right.IsRight(), "should be a Right not Left")
+	assert.Assert(t, !left.IsRight(), "should be a Left not Right")
 }
 
 func TestIsLeft(t *testing.T) {
-	if right.IsLeft() {
-		t.Errorf("should be a Right not Left")
-	}
-
-	if !left.IsLeft() {
-		t.Errorf("should be a Left not Right")
-	}
+	assert.Assert(t, !right.IsLeft(), "should be a Right not Left")
+	assert.Assert(t,  left.IsLeft(), "should be a Left not Right")
 }
 
 func TestSwap(t *testing.T) {
-	if right.Swap().IsRight() {
-		t.Errorf("should be a Left not Right")
-	}
-
-	if left.Swap().IsLeft() {
-		t.Errorf("should be a Right not Left")
-	}
+	assert.Assert(t, right.Swap().IsLeft(), "should be a Left not Right")
+	assert.Assert(t, left.Swap().IsRight(), "should be a Right not Left")
 }
 
 func TestEitherOrElse(t *testing.T) {
-	if right.OrElse(left).IsLeft() {
-		t.Errorf("should be a Right not Left")
-	}
-
-	if left.OrElse(right).IsLeft() {
-		t.Errorf("should be a Right not Left")
-	}
+	assert.Assert(t, right.OrElse(left).IsRight(), "should be a Right not Left")
+	assert.Assert(t, left.OrElse(right).IsRight(), "should be a Right not Left")
 }
 
 func TestEitherGetOrElse(t *testing.T) {
-	if right.GetOrElse(20) != 10 {
-		t.Errorf("value should be 10")
-	}
-
-	if left.GetOrElse(20) != 20 {
-		t.Errorf("value should be 20")
-	}
+	assert.Equal(t, right.GetOrElse(20), 10, "value should be 10")
+	assert.Equal(t, left.GetOrElse(20), 20, "value should be 20")
 }
 
 func TestEitherFilterOrElse(t *testing.T) {
 	transform := func(value int) error {
 		return fmt.Errorf("doesn't pass the EvenPredicate")
 	}
-
-	if right.FilterOrElse(EvenPredicate, transform).IsLeft() {
-		t.Error("should not be a Left")
-	}
-
-	if left.FilterOrElse(EvenPredicate, transform).IsRight() {
-		t.Error("should not be a Right")
-	}
+	assert.Assert(t, right.FilterOrElse(EvenPredicate, transform).IsRight(), "should not be a Left")
+	assert.Assert(t, left.FilterOrElse(EvenPredicate, transform).IsLeft(), "should not be a Right")
 
 	odd := RightOf[error, int](11)
-	if odd.FilterOrElse(EvenPredicate, transform).IsRight() {
-		t.Error("should not be a Right")
-	}
+	assert.Assert(t, odd.FilterOrElse(EvenPredicate, transform).IsLeft(), "should not be a Right")
 }
 
 func TestEitherFilter(t *testing.T) {
-	if right.Filter(EvenPredicate).IsEmpty() {
-		t.Error("should be a Some of Either")
-	}
-
-	if !left.Filter(EvenPredicate).IsEmpty() {
-		t.Error("should be a Empty of Either")
-	}
+	assert.Assert(t, !right.Filter(EvenPredicate).IsEmpty(), "should be a Some of Either")
+	assert.Assert(t, left.Filter(EvenPredicate).IsEmpty(), "should be a Empty of Either")
 
 	odd := RightOf[error, int](11)
-	if !odd.Filter(EvenPredicate).IsEmpty() {
-		t.Error("should be a Empty of Either")
-	}
+	assert.Assert(t, odd.Filter(EvenPredicate).IsEmpty(), "should be a Empty of Either")
 }
 
 func TestMapEither(t *testing.T) {
@@ -104,14 +65,10 @@ func TestMapEither(t *testing.T) {
 		return strconv.Itoa(value)
 	}
 	var mapRight Either[error, string] = MapEither(right, mapper)
-	if mapRight.GetOrElse("good") != "10" {
-		t.Errorf("value should be 10")
-	}
+	assert.Equal(t, mapRight.GetOrElse("good"), "10", "value should be 10")
 
 	var mapLeft Either[error, string] = MapEither[error, int, string](left, mapper)
-	if mapLeft.IsRight() {
-		t.Errorf("should be an Left Either")
-	}
+	assert.Assert(t, mapLeft.IsLeft(), "should be an Left Either")
 }
 
 func TestFlatMapEither(t *testing.T) {
@@ -119,13 +76,8 @@ func TestFlatMapEither(t *testing.T) {
 		return RightOf[error, string](strconv.Itoa(value))
 	}
 	var mapRight Either[error, string] = FlatMapEither(right, mapper)
-	if mapRight.GetOrElse("good") != "10" {
-		t.Errorf("value should be 10")
-	}
+	assert.Equal(t, mapRight.GetOrElse("good"), "10", "value should be 10")
 
 	var mapLeft Either[error, string] = FlatMapEither[error, int, string](left, mapper)
-	if mapLeft.IsRight() {
-		t.Errorf("should be an Left Either")
-	}
-
+	assert.Assert(t, mapLeft.IsLeft(), "should be an Left Either")
 }

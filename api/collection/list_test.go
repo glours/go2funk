@@ -105,14 +105,12 @@ func TestIsEmpty(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if testCase.value.IsEmpty() != testCase.isEmpty {
-				t.Errorf("expected %t but value is %t", testCase.isEmpty, testCase.value.IsEmpty())
-			}
+			assert.Equal(t, testCase.value.IsEmpty(), testCase.isEmpty, fmt.Sprintf("expected %t but value is %t", testCase.isEmpty, testCase.value.IsEmpty()))
 		})
 	}
 }
 
-func TestLenght(t *testing.T) {
+func TestLength(t *testing.T) {
 	testCases := []struct {
 		name   string
 		value  List[int]
@@ -136,9 +134,7 @@ func TestLenght(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if testCase.value.Length() != testCase.length {
-				t.Errorf("expected %d but value is %d", testCase.length, testCase.value.Length())
-			}
+			assert.Equal(t, testCase.value.Length(), testCase.length, fmt.Sprintf("expected %d but value is %d", testCase.length, testCase.value.Length()))
 		})
 	}
 }
@@ -168,9 +164,7 @@ func TestAppend(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.value.Append(10)
-			if result.Length() != testCase.length {
-				t.Errorf("expected %d but value is %d", testCase.length, result.Length())
-			}
+			assert.Equal(t, result.Length(), testCase.length, fmt.Sprintf("expected %d but value is %d", testCase.length, result.Length()))
 		})
 	}
 }
@@ -200,9 +194,7 @@ func TestAppendAll(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.value.AppendAll([]int{10, 20, 30})
-			if result.Length() != testCase.length {
-				t.Errorf("expected %d but value is %d", testCase.length, result.Length())
-			}
+			assert.Equal(t, result.Length(), testCase.length, fmt.Sprintf("expected %d but value is %d", testCase.length, result.Length()))
 		})
 	}
 }
@@ -235,9 +227,7 @@ func TestMapList(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := MapList[int, string](testCase.value, mapper)
-			if result != testCase.expected {
-				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-			}
+			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
 		})
 	}
 }
@@ -267,9 +257,7 @@ func TestFilterList(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.value.Filter(evenPredicate)
-			if result != testCase.expected {
-				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-			}
+			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
 		})
 	}
 }
@@ -309,9 +297,7 @@ func TestRemoveFromList(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.original.Remove(testCase.valueToRemove)
-			if result != testCase.expected {
-				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-			}
+			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
 		})
 	}
 }
@@ -351,9 +337,7 @@ func TestRemoveFromListWithPredicate(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.original.RemovePredicate(testCase.predicate)
-			if result != testCase.expected {
-				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-			}
+			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
 		})
 	}
 }
@@ -365,6 +349,7 @@ func TestInsertInList(t *testing.T) {
 		index      int
 		expected   List[int]
 		checkError bool
+		errorMessage string
 	}{
 		{
 			name:       "Empty List index 0",
@@ -379,6 +364,7 @@ func TestInsertInList(t *testing.T) {
 			index:      -1,
 			expected:   Empty[int](),
 			checkError: true,
+			errorMessage: "index out of range -1 on empty List",
 		},
 		{
 			name:       "Empty List index > 0",
@@ -386,6 +372,7 @@ func TestInsertInList(t *testing.T) {
 			index:      1,
 			expected:   Empty[int](),
 			checkError: true,
+			errorMessage: "index out of range 1 on empty List",
 		},
 		{
 			name:       "Single Element List index 0",
@@ -407,6 +394,7 @@ func TestInsertInList(t *testing.T) {
 			index:      2,
 			expected:   Empty[int](),
 			checkError: true,
+			errorMessage: "index out of range 1 on empty List",
 		},
 		{
 			name:       "Single Element List index < 0",
@@ -414,6 +402,7 @@ func TestInsertInList(t *testing.T) {
 			index:      -1,
 			expected:   Empty[int](),
 			checkError: true,
+			errorMessage: "index out of range -1 on List",
 		},
 		{
 			name:       "Multiple Elements List index 0",
@@ -435,6 +424,7 @@ func TestInsertInList(t *testing.T) {
 			index:      7,
 			expected:   Empty[int](),
 			checkError: true,
+			errorMessage: "index out of range 2 on empty List",
 		},
 		{
 			name:       "Multiple Elements List negative index",
@@ -442,12 +432,14 @@ func TestInsertInList(t *testing.T) {
 			index:      -1,
 			expected:   Empty[int](),
 			checkError: true,
+			errorMessage: "index out of range -1 on List",
 		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result, err := testCase.original.Insert(testCase.index, 7)
 			if testCase.checkError {
+				assert.Error(t, err, testCase.errorMessage , "index of range error was expected")
 				if err == nil {
 					t.Errorf("index of range error was expected")
 				}
@@ -485,9 +477,7 @@ func TestReverseList(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			result := testCase.original.Reverse()
-			if result != testCase.expected {
-				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-			}
+			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
 		})
 	}
 }

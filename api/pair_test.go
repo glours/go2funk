@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"gotest.tools/v3/assert"
 	"strconv"
 	"testing"
 )
@@ -17,38 +19,26 @@ var (
 )
 
 func TestGetLeft(t *testing.T) {
-	if pair.GetLeft() != 10 {
-		t.Errorf("value should be 10 but is %d", pair.GetLeft())
-	}
+	assert.Equal(t, pair.GetLeft(), 10, fmt.Sprintf("value should be 10 but is %d", pair.GetLeft()))
 }
 
 func TestGetRight(t *testing.T) {
-	if pair.GetRight() != "ten" {
-		t.Errorf("value should be 'ten' but is '%s'", pair.GetRight())
-	}
+	assert.Equal(t, pair.GetRight(), "ten", fmt.Sprintf("value should be 'ten' but is '%s'", pair.GetRight()))
 }
 
 func TestMapLeftPair(t *testing.T) {
 	mappedLeft := MapLeftPair(pair, mapperLeft)
-	if mappedLeft.GetLeft() != "10" {
-		t.Errorf("value should be '10' but is '%s'", mappedLeft.GetLeft())
-	}
+	assert.Equal(t, mappedLeft.GetLeft(), "10", fmt.Sprintf("value should be '10' but is '%s'", mappedLeft.GetLeft()))
 }
 
 func TestMapRightPair(t *testing.T) {
 	mappedRight := MapRightPair(pair, mapperRight)
-	if string(mappedRight.GetRight()) != "ten" {
-		t.Errorf("value should be a []array representing 'ten' string but is %s", mappedRight.GetRight())
-	}
+	assert.Equal(t, string(mappedRight.GetRight()), "ten", fmt.Sprintf("value should be a []array representing 'ten' string but is %s", mappedRight.GetRight()))
 }
 
 func TestMapPair(t *testing.T) {
 	mapped := MapPair(pair, mapperLeft, mapperRight)
-	if mapped.GetLeft() != "10" {
-		t.Errorf("value should be '10' but is '%s'", mapped.GetLeft())
-	}
+	assert.Equal(t, mapped.GetLeft(), "10", fmt.Sprintf("value should be '10' but is '%s'", mapped.GetLeft()))
 
-	if string(mapped.GetRight()) != "ten" {
-		t.Errorf("value should be a []array representing 'ten' string but is %s", mapped.GetRight())
-	}
+	assert.Equal(t, string(mapped.GetRight()), "ten", fmt.Sprintf("value should be a []array representing 'ten' string but is %s", mapped.GetRight()))
 }
