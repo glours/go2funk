@@ -5,18 +5,19 @@ structures easily.
 The idea is to keep this repo as much as possible dependency free.
 
 ## How to compile
-
-You should follow the [golang process](https://go.googlesource.com/go/+/refs/heads/dev.go2go/README.go2go.md) to get the
-go2go tool and be able to compile the project
+Since Golang `1.17`, type parameters was merged into the master branch of the language.   
+You can now, with a custom build `1.18` of Golang and some `gcflags`, use your Go commands with `gotip` (ex: `gotip build`, `gotip test`, ...)   
+You should follow the [golang process](https://github.com/golang/tools/blob/master/gopls/doc/advanced.md#working-with-generic-code) to get the
+`gotip` tool and be able to compile a version of Golang with full support of Generics.
 
 ## Build
 
-use `go tool go2go build` or if you
+use `gotip build -gcflags=all=-G=3 ./...` or if you
 use [Goland then configure external tools](https://www.jetbrains.com/help/go/how-to-use-type-parameters-for-generic-programming.html)
 
 ## Run tests
 
-use `go tool go2go test` or if you
+use `gotip test -v -gcflags=all=-G=3 ./...` or if you
 use [Goland then configure external tools](https://www.jetbrains.com/help/go/how-to-use-type-parameters-for-generic-programming.html)
 
 ## Usage

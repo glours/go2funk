@@ -1,5 +1,5 @@
 module glours/go2funk
 
-go 1.16
+go 1.18
 
-require gotest.tools/v3 v3.0.3 // indirect
+//require gotest.tools/v3 v3.0.3 // indirect

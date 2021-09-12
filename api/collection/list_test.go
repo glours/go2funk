@@ -1,6 +1,8 @@
 package collection
 
 import (
+	"fmt"
+	"gotest.tools/v3/assert"
 	"strconv"
 	"testing"
 )
@@ -45,9 +47,7 @@ func TestHead(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if testCase.value.head() != testCase.expected {
-				t.Errorf("expected %d but value is %d", testCase.expected, testCase.value.head())
-			}
+			assert.Equal(t, testCase.value.head(), testCase.expected, fmt.Sprintf("expected %d but value is %d", testCase.expected, testCase.value.head()))
 		})
 	}
 }
@@ -76,9 +76,7 @@ func TestTail(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if testCase.value.tail() != testCase.expected {
-				t.Errorf("expected %d but value is %d", testCase.expected, testCase.value.tail())
-			}
+			assert.Equal(t, testCase.value.tail(), testCase.expected, fmt.Sprintf("expected %d but value is %d", testCase.expected, testCase.value.tail()))
 		})
 	}
 }
