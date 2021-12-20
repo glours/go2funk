@@ -5,19 +5,25 @@ structures easily.
 The idea is to keep this repo as much as possible dependency free.
 
 ## How to compile
-Since Golang `1.17`, type parameters was merged into the master branch of the language.   
-You can now, with a custom build `1.18` of Golang and some `gcflags`, use your Go commands with `gotip` (ex: `gotip build`, `gotip test`, ...)   
-You should follow the [golang process](https://github.com/golang/tools/blob/master/gopls/doc/advanced.md#working-with-generic-code) to get the
-`gotip` tool and be able to compile a version of Golang with full support of Generics.
+Golang `1.18-beta1` has been release with type parameters.   
+You can now, compile and test your code as usual (`go build`, `go test` ...)
+
+You can also use Docker Dev Environments to develop this project:
+* Open Docker Desktop
+* Go to Dev Environments view
+* Copy/Paste the git repo URL to start working!   
+  
+Check the configuration of the base image in the `.docker/config.json` config file
+
 
 ## Build
 
-use `gotip build -gcflags=all=-G=3 ./...` or if you
+use `go build  ./...` or if you
 use [Goland then configure external tools](https://www.jetbrains.com/help/go/how-to-use-type-parameters-for-generic-programming.html)
 
 ## Run tests
 
-use `gotip test -v -gcflags=all=-G=3 ./...` or if you
+use `go test -v ./...` or if you
 use [Goland then configure external tools](https://www.jetbrains.com/help/go/how-to-use-type-parameters-for-generic-programming.html)
 
 ## Usage
