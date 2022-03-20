@@ -12,8 +12,8 @@ var (
 	defaultEitherError                    = errors.New("default Either error")
 	_                  Either[error, int] = Right[error, int]{10}
 	_                  Either[error, int] = Left[error, int]{defaultEitherError}
-	right              Either[error, int] = RightOf[error, int](10)
-	left               Either[error, int] = LeftOf[error, int](defaultEitherError)
+	right                                 = RightOf[error, int](10)
+	left                                  = LeftOf[error, int](defaultEitherError)
 )
 
 func TestIsRight(t *testing.T) {
@@ -23,7 +23,7 @@ func TestIsRight(t *testing.T) {
 
 func TestIsLeft(t *testing.T) {
 	assert.Assert(t, !right.IsLeft(), "should be a Right not Left")
-	assert.Assert(t,  left.IsLeft(), "should be a Left not Right")
+	assert.Assert(t, left.IsLeft(), "should be a Left not Right")
 }
 
 func TestSwap(t *testing.T) {
@@ -64,10 +64,10 @@ func TestMapEither(t *testing.T) {
 	var mapper = func(value int) string {
 		return strconv.Itoa(value)
 	}
-	var mapRight Either[error, string] = MapEither(right, mapper)
+	var mapRight = MapEither(right, mapper)
 	assert.Equal(t, mapRight.GetOrElse("good"), "10", "value should be 10")
 
-	var mapLeft Either[error, string] = MapEither[error, int, string](left, mapper)
+	var mapLeft = MapEither[error, int, string](left, mapper)
 	assert.Assert(t, mapLeft.IsLeft(), "should be an Left Either")
 }
 
@@ -75,9 +75,9 @@ func TestFlatMapEither(t *testing.T) {
 	var mapper = func(value int) Either[error, string] {
 		return RightOf[error, string](strconv.Itoa(value))
 	}
-	var mapRight Either[error, string] = FlatMapEither(right, mapper)
+	var mapRight = FlatMapEither(right, mapper)
 	assert.Equal(t, mapRight.GetOrElse("good"), "10", "value should be 10")
 
-	var mapLeft Either[error, string] = FlatMapEither[error, int, string](left, mapper)
+	var mapLeft = FlatMapEither[error, int, string](left, mapper)
 	assert.Assert(t, mapLeft.IsLeft(), "should be an Left Either")
 }
