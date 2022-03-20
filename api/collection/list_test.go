@@ -14,9 +14,9 @@ var (
 		consTail: Empty[int](),
 		length:   1,
 	}
-	emptyList            List[int] = Empty[int]()
-	singleElementList    List[int] = Of[int](10)
-	multipleElementsList List[int] = OfSlice[int]([]int{1, 2, 3, 4, 5})
+	emptyList            = Empty[int]()
+	singleElementList    = Of[int](10)
+	multipleElementsList = OfSlice([]int{1, 2, 3, 4, 5})
 
 	evenPredicate = func(value int) bool {
 		return value%2 == 0
@@ -344,11 +344,11 @@ func TestRemoveFromListWithPredicate(t *testing.T) {
 
 func TestInsertInList(t *testing.T) {
 	testCases := []struct {
-		name       string
-		original   List[int]
-		index      int
-		expected   List[int]
-		checkError bool
+		name         string
+		original     List[int]
+		index        int
+		expected     List[int]
+		checkError   bool
 		errorMessage string
 	}{
 		{
@@ -359,19 +359,19 @@ func TestInsertInList(t *testing.T) {
 			checkError: false,
 		},
 		{
-			name:       "Empty List negative index",
-			original:   emptyList,
-			index:      -1,
-			expected:   Empty[int](),
-			checkError: true,
+			name:         "Empty List negative index",
+			original:     emptyList,
+			index:        -1,
+			expected:     Empty[int](),
+			checkError:   true,
 			errorMessage: "index out of range -1 on empty List",
 		},
 		{
-			name:       "Empty List index > 0",
-			original:   emptyList,
-			index:      1,
-			expected:   Empty[int](),
-			checkError: true,
+			name:         "Empty List index > 0",
+			original:     emptyList,
+			index:        1,
+			expected:     Empty[int](),
+			checkError:   true,
 			errorMessage: "index out of range 1 on empty List",
 		},
 		{
@@ -389,19 +389,19 @@ func TestInsertInList(t *testing.T) {
 			checkError: false,
 		},
 		{
-			name:       "Single Element List index > 1",
-			original:   singleElementList,
-			index:      2,
-			expected:   Empty[int](),
-			checkError: true,
+			name:         "Single Element List index > 1",
+			original:     singleElementList,
+			index:        2,
+			expected:     Empty[int](),
+			checkError:   true,
 			errorMessage: "index out of range 1 on empty List",
 		},
 		{
-			name:       "Single Element List index < 0",
-			original:   singleElementList,
-			index:      -1,
-			expected:   Empty[int](),
-			checkError: true,
+			name:         "Single Element List index < 0",
+			original:     singleElementList,
+			index:        -1,
+			expected:     Empty[int](),
+			checkError:   true,
 			errorMessage: "index out of range -1 on List",
 		},
 		{
@@ -419,19 +419,19 @@ func TestInsertInList(t *testing.T) {
 			checkError: false,
 		},
 		{
-			name:       "Multiple Elements List index out of bounds",
-			original:   multipleElementsList,
-			index:      7,
-			expected:   Empty[int](),
-			checkError: true,
+			name:         "Multiple Elements List index out of bounds",
+			original:     multipleElementsList,
+			index:        7,
+			expected:     Empty[int](),
+			checkError:   true,
 			errorMessage: "index out of range 2 on empty List",
 		},
 		{
-			name:       "Multiple Elements List negative index",
-			original:   multipleElementsList,
-			index:      -1,
-			expected:   Empty[int](),
-			checkError: true,
+			name:         "Multiple Elements List negative index",
+			original:     multipleElementsList,
+			index:        -1,
+			expected:     Empty[int](),
+			checkError:   true,
 			errorMessage: "index out of range -1 on List",
 		},
 	}
@@ -439,7 +439,7 @@ func TestInsertInList(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			result, err := testCase.original.Insert(testCase.index, 7)
 			if testCase.checkError {
-				assert.Error(t, err, testCase.errorMessage , "index of range error was expected")
+				assert.Error(t, err, testCase.errorMessage, "index of range error was expected")
 				if err == nil {
 					t.Errorf("index of range error was expected")
 				}

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	entry Entry[int, string] = NewEntry[int, string](10, "ten", nil)
+	entry = NewEntry[int, string](10, "ten", nil)
 )
 
 func TestGetKey(t *testing.T) {

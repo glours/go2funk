@@ -5,7 +5,7 @@ structures easily.
 The idea is to keep this repo as much as possible dependency free.
 
 ## How to compile
-Golang `1.18-beta1` has been release with type parameters.   
+Golang `1.18` has been release with type parameters.   
 You can now, compile and test your code as usual (`go build`, `go test` ...)
 
 You can also use Docker Dev Environments to develop this project:
@@ -95,8 +95,8 @@ For more usage details check [tests](./api/control/try_test.go).
 
 ```go
 defaultEitherError = errors.New("default Either error")
-right Either[error, int] = RightOf[error, int](10)
-left Either[error, int] = LeftOf[error, int](defaultEitherError)
+right = RightOf[error, int](10)
+left = LeftOf[error, int](defaultEitherError)
 
 fmt.Println(right.GetOrElse(20)) // Print 10
 fmt.Println(left.GetOrElse(20)) // Print 20

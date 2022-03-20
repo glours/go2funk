@@ -11,10 +11,10 @@ import (
 var (
 	_    Option[int] = None[int]{}
 	_    Option[int] = Some[int]{value: 10}
-	_    Option[int] = Of[int](10)
-	_    Option[int] = Empty[int]()
-	some Option[int] = Of(10)
-	none Option[int] = Empty[int]()
+	_                = Of[int](10)
+	_                = Empty[int]()
+	some             = Of(10)
+	none             = Empty[int]()
 )
 
 func TestIsPresent(t *testing.T) {
@@ -50,7 +50,7 @@ func TestOptionMap(t *testing.T) {
 	}
 
 	assert.Assert(t, !MapOption[int, string](some, mapper).IsEmpty(), "result of MapOption function should not be empty")
-	assert.Assert(t, MapOption[int, string](none, mapper).IsEmpty(),"result of MapOption function should be empty")
+	assert.Assert(t, MapOption[int, string](none, mapper).IsEmpty(), "result of MapOption function should be empty")
 }
 
 func TestOptionFlatMap(t *testing.T) {

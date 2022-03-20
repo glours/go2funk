@@ -13,8 +13,8 @@ var (
 	nilPredicateError          = errors.New("predicate should not be nil")
 	_                 Try[int] = Success[int]{10}
 	_                 Try[int] = Failure[int]{cause: defaultTryError}
-	success           Try[int] = SuccessOf[int](10)
-	failure           Try[int] = FailureOf[int](defaultTryError)
+	success                    = SuccessOf[int](10)
+	failure                    = FailureOf[int](defaultTryError)
 	EvenPredicate              = func(value int) bool {
 		return value%2 == 0
 	}
