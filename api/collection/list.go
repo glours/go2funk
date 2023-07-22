@@ -27,7 +27,7 @@ func MapList[T any, U any](list List[T], mapper func(T) U) List[U] {
 	if list.IsEmpty() {
 		return result
 	}
-	return newCons[U](mapper(list.head()), MapList(list.tail(), mapper))
+	return newCons[U](mapper(list.head()), MapList[T, U](list.tail(), mapper))
 }
 
 // Empty provide an empty List which could contains elements of T type.
