@@ -20,13 +20,11 @@ linters:
           files:
             - "**/api/**/*.go"
             - "!$test"
+          # Allow-list only: anything absent is rejected. A deny entry would
+          # win over allow and would also reject the module importing itself.
           allow:
             - $gostd
-          deny:
-            - pkg: "github.com"
-              desc: go2funk has no runtime dependencies, see AGENTS.md
-            - pkg: "golang.org/x"
-              desc: go2funk has no runtime dependencies, see AGENTS.md
+            - github.com/glours/go2funk
 
     revive:
       rules:
