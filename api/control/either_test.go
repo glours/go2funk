@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	defaultEitherError                    = errors.New("default Either error")
-	_                  Either[error, int] = Right[error, int]{10}
-	_                  Either[error, int] = Left[error, int]{defaultEitherError}
-	right                                 = RightOf[error, int](10)
-	left                                  = LeftOf[error, int](defaultEitherError)
+	errDefaultEither                    = errors.New("default Either error")
+	_                Either[error, int] = Right[error, int]{10}
+	_                Either[error, int] = Left[error, int]{errDefaultEither}
+	right                               = RightOf[error, int](10)
+	left                                = LeftOf[error, int](errDefaultEither)
 )
 
 func TestIsRight(t *testing.T) {
@@ -61,9 +61,7 @@ func TestEitherFilter(t *testing.T) {
 }
 
 func TestMapEither(t *testing.T) {
-	var mapper = func(value int) string {
-		return strconv.Itoa(value)
-	}
+	var mapper = strconv.Itoa
 	var mapRight = MapEither(right, mapper)
 	assert.Equal(t, mapRight.GetOrElse("good"), "10", "value should be 10")
 

@@ -200,9 +200,7 @@ func TestAppendAll(t *testing.T) {
 }
 
 func TestMapList(t *testing.T) {
-	var mapper = func(value int) string {
-		return strconv.Itoa(value)
-	}
+	var mapper = strconv.Itoa
 	testCases := []struct {
 		name     string
 		value    List[int]
@@ -443,10 +441,8 @@ func TestInsertInList(t *testing.T) {
 				if err == nil {
 					t.Errorf("index of range error was expected")
 				}
-			} else {
-				if result != testCase.expected {
-					t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-				}
+			} else if result != testCase.expected {
+				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
 			}
 		})
 	}

@@ -45,9 +45,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestOptionMap(t *testing.T) {
-	var mapper = func(value int) string {
-		return strconv.Itoa(value)
-	}
+	var mapper = strconv.Itoa
 
 	assert.Assert(t, !MapOption[int, string](some, mapper).IsEmpty(), "result of MapOption function should not be empty")
 	assert.Assert(t, MapOption[int, string](none, mapper).IsEmpty(), "result of MapOption function should be empty")
