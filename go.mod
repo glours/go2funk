@@ -1,6 +1,6 @@
 module github.com/glours/go2funk
 
-go 1.20
+go 1.27
 
 require gotest.tools/v3 v3.0.3
 
