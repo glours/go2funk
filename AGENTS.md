@@ -121,6 +121,14 @@ These are settled decisions, not preferences:
 - Any deviation from Vavr's semantics is documented in the godoc with a one-line
   rationale.
 
+## CI
+
+- **GitHub Actions are pinned to a full commit SHA**, with the version in a
+  trailing comment (`uses: actions/checkout@3d3c42e… # v7.0.1`). A mutable tag
+  can be repointed at malicious code; a SHA cannot. Never use `@v4`-style refs.
+- Tool versions are pinned too: golangci-lint and GoReleaser in the workflows,
+  the linter config in `.golangci.yml`.
+
 ## Git
 
 - **Never commit, push, tag, or force-push without an explicit instruction.**
