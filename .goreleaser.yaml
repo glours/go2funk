@@ -1,0 +1,45 @@
+# go2funk is a library: there is nothing to compile, so GoReleaser is only used
+# to cut the GitHub release, its notes and the source archive.
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - skip: true
+
+source:
+  enabled: true
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?!?:'
+      order: 0
+    - title: Bug fixes
+      regexp: '^fix(\(.+\))?!?:'
+      order: 1
+    - title: Documentation
+      regexp: '^docs(\(.+\))?!?:'
+      order: 2
+    - title: Other
+      order: 99
+  filters:
+    exclude:
+      - '^test:'
+      - '^chore\(deps\):'
+      - Merge pull request
+
+release:
+  github:
+    owner: glours
+    name: go2funk
+  prerelease: auto
+  footer: |
+    ```sh
+    go get github.com/glours/go2funk@{{ .Tag }}
+    ```

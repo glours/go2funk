@@ -124,6 +124,7 @@ These are settled decisions, not preferences:
 ## Git
 
 - **Never commit, push, tag, or force-push without an explicit instruction.**
+  Tags matter here: pushing a `v*` tag publishes a release through GoReleaser.
 - Never `git push --force` on `main`.
 - Work on a branch; `main` is not a working branch.
 - One logical change per commit. Imperative mood, present tense

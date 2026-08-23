@@ -199,6 +199,12 @@ go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./... | grep -v go
 
 Both run in CI, along with the build and test matrix.
 
+### Releases
+
+Pushing a `v*` tag triggers GoReleaser, which publishes the GitHub release, its
+notes and the source archive. Config is in `.goreleaser.yaml`; check it with
+`goreleaser check` and dry-run with `goreleaser release --snapshot --clean`.
+
 ### Contributing
 
 [`AGENTS.md`](AGENTS.md) holds the development rules for this repository — no
