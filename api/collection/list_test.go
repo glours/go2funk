@@ -1,479 +1,257 @@
-package collection
+package collection_test
 
 import (
-	"fmt"
-	"gotest.tools/v3/assert"
+	"slices"
 	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/glours/go2funk/api/collection"
 )
 
-var (
-	_ List[int] = empty[int]{}
-	_ List[int] = cons[int]{
-		consHead: 10,
-		consTail: Empty[int](),
-		length:   1,
-	}
-	emptyList            = Empty[int]()
-	singleElementList    = Of[int](10)
-	multipleElementsList = OfSlice([]int{1, 2, 3, 4, 5})
+func TestZeroValueIsEmpty(t *testing.T) {
+	var l collection.List[int]
 
-	evenPredicate = func(value int) bool {
-		return value%2 == 0
+	if !l.IsEmpty() || l.Length() != 0 {
+		t.Error("the zero value of List must be the empty list")
 	}
-)
-
-func TestHead(t *testing.T) {
-	testCases := []struct {
-		name     string
-		value    List[int]
-		expected int
-	}{
-		{
-			name:     "Empty List",
-			value:    emptyList,
-			expected: 0,
-		},
-		{
-			name:     "Single Element List",
-			value:    singleElementList,
-			expected: 10,
-		},
-		{
-			name:     "Multiple Elements List",
-			value:    multipleElementsList,
-			expected: 1,
-		},
+	if !l.Head().IsEmpty() {
+		t.Error("the head of an empty list must be None")
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.value.head(), testCase.expected, fmt.Sprintf("expected %d but value is %d", testCase.expected, testCase.value.head()))
-		})
+	if got := l.ToSlice(); len(got) != 0 {
+		t.Errorf("ToSlice = %v, want []", got)
 	}
 }
 
-func TestTail(t *testing.T) {
-	testCases := []struct {
-		name     string
-		value    List[int]
-		expected List[int]
-	}{
-		{
-			name:     "Empty List",
-			value:    emptyList,
-			expected: emptyList,
-		},
-		{
-			name:     "Single Element List",
-			value:    singleElementList,
-			expected: emptyList,
-		},
-		{
-			name:     "Multiple Elements List",
-			value:    multipleElementsList,
-			expected: OfSlice[int]([]int{2, 3, 4, 5}),
-		},
+func TestConstructors(t *testing.T) {
+	if got := collection.Of(1, 2, 3).ToSlice(); !slices.Equal(got, []int{1, 2, 3}) {
+		t.Errorf("Of = %v, want [1 2 3]", got)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.value.tail(), testCase.expected, fmt.Sprintf("expected %d but value is %d", testCase.expected, testCase.value.tail()))
-		})
+	if !collection.Of[int]().IsEmpty() {
+		t.Error("Of with no argument must be empty")
+	}
+	if !collection.Empty[int]().IsEmpty() {
+		t.Error("Empty must be empty")
+	}
+
+	values := []int{1, 2, 3}
+	if got := collection.Of(values...).ToSlice(); !slices.Equal(got, values) {
+		t.Errorf("Of(slice...) = %v, want %v", got, values)
 	}
 }
 
-func TestIsEmpty(t *testing.T) {
-	testCases := []struct {
-		name    string
-		value   List[int]
-		isEmpty bool
-	}{
-		{
-			name:    "Empty List",
-			value:   emptyList,
-			isEmpty: true,
-		},
-		{
-			name:    "Single Element List",
-			value:   singleElementList,
-			isEmpty: false,
-		},
-		{
-			name:    "Multiple Elements List",
-			value:   multipleElementsList,
-			isEmpty: false,
-		},
+// The list must be readable: this is what the interface-based version could not do.
+func TestHeadTailGet(t *testing.T) {
+	l := collection.Of(1, 2, 3)
+
+	if got := l.Head().OrElse(-1); got != 1 {
+		t.Errorf("Head = %d, want 1", got)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.value.IsEmpty(), testCase.isEmpty, fmt.Sprintf("expected %t but value is %t", testCase.isEmpty, testCase.value.IsEmpty()))
-		})
+	if got := l.Tail().ToSlice(); !slices.Equal(got, []int{2, 3}) {
+		t.Errorf("Tail = %v, want [2 3]", got)
+	}
+	if got := l.Get(1).OrElse(-1); got != 2 {
+		t.Errorf("Get(1) = %d, want 2", got)
+	}
+	if !l.Get(3).IsEmpty() {
+		t.Error("Get out of range must be None")
+	}
+	if !l.Get(-1).IsEmpty() {
+		t.Error("Get with a negative index must be None")
+	}
+	if !collection.Empty[int]().Tail().IsEmpty() {
+		t.Error("the tail of an empty list is the empty list")
+	}
+}
+
+func TestAllIsAnIterSeq(t *testing.T) {
+	l := collection.Of(1, 2, 3)
+
+	var seen []int
+	for value := range l.All() {
+		seen = append(seen, value)
+	}
+	if !slices.Equal(seen, []int{1, 2, 3}) {
+		t.Errorf("range over All = %v, want [1 2 3]", seen)
+	}
+
+	// A break must stop the iteration.
+	count := 0
+	for range l.All() {
+		count++
+		break
+	}
+	if count != 1 {
+		t.Errorf("break stopped after %d elements, want 1", count)
+	}
+
+	if got := collection.Collect(l.All()).ToSlice(); !slices.Equal(got, []int{1, 2, 3}) {
+		t.Errorf("Collect = %v, want [1 2 3]", got)
+	}
+}
+
+func TestPrependAppendAndPersistence(t *testing.T) {
+	original := collection.Of(2, 3)
+
+	prepended := original.Prepend(1)
+	appended := original.Append(4)
+
+	if got := prepended.ToSlice(); !slices.Equal(got, []int{1, 2, 3}) {
+		t.Errorf("Prepend = %v, want [1 2 3]", got)
+	}
+	if got := appended.ToSlice(); !slices.Equal(got, []int{2, 3, 4}) {
+		t.Errorf("Append = %v, want [2 3 4]", got)
+	}
+	if got := original.ToSlice(); !slices.Equal(got, []int{2, 3}) {
+		t.Errorf("the original list was mutated: %v, want [2 3]", got)
+	}
+	if got := original.AppendAll(4, 5).ToSlice(); !slices.Equal(got, []int{2, 3, 4, 5}) {
+		t.Errorf("AppendAll = %v, want [2 3 4 5]", got)
 	}
 }
 
 func TestLength(t *testing.T) {
-	testCases := []struct {
-		name   string
-		value  List[int]
-		length int
+	for _, tc := range []struct {
+		list collection.List[int]
+		want int
 	}{
-		{
-			name:   "Empty List",
-			value:  emptyList,
-			length: 0,
-		},
-		{
-			name:   "Single Element List",
-			value:  singleElementList,
-			length: 1,
-		},
-		{
-			name:   "Multiple Elements List",
-			value:  multipleElementsList,
-			length: 5,
-		},
-	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.value.Length(), testCase.length, fmt.Sprintf("expected %d but value is %d", testCase.length, testCase.value.Length()))
-		})
+		{collection.Empty[int](), 0},
+		{collection.Of(1), 1},
+		{collection.Of(1, 2, 3), 3},
+		{collection.Of(1, 2, 3).Tail(), 2},
+		{collection.Of(1, 2, 3).Prepend(0), 4},
+	} {
+		if got := tc.list.Length(); got != tc.want {
+			t.Errorf("Length of %v = %d, want %d", tc.list.ToSlice(), got, tc.want)
+		}
 	}
 }
 
-func TestAppend(t *testing.T) {
-	testCases := []struct {
-		name   string
-		value  List[int]
-		length int
-	}{
-		{
-			name:   "Empty List",
-			value:  emptyList,
-			length: 1,
-		},
-		{
-			name:   "Single Element List",
-			value:  singleElementList,
-			length: 2,
-		},
-		{
-			name:   "Multiple Elements List",
-			value:  multipleElementsList,
-			length: 6,
-		},
+// The point of the rewrite: Map is a method and changes the element type.
+func TestMapChangesTheElementType(t *testing.T) {
+	var mapped collection.List[string] = collection.Of(1, 2, 3).Map(strconv.Itoa)
+
+	if got := mapped.ToSlice(); !slices.Equal(got, []string{"1", "2", "3"}) {
+		t.Errorf("Map = %v, want [1 2 3]", got)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := testCase.value.Append(10)
-			assert.Equal(t, result.Length(), testCase.length, fmt.Sprintf("expected %d but value is %d", testCase.length, result.Length()))
-		})
+	if !collection.Empty[int]().Map(strconv.Itoa).IsEmpty() {
+		t.Error("mapping an empty list gives an empty list")
 	}
 }
 
-func TestAppendAll(t *testing.T) {
-	testCases := []struct {
-		name   string
-		value  List[int]
-		length int
-	}{
-		{
-			name:   "Empty List",
-			value:  emptyList,
-			length: 3,
-		},
-		{
-			name:   "Single Element List",
-			value:  singleElementList,
-			length: 4,
-		},
-		{
-			name:   "Multiple Elements List",
-			value:  multipleElementsList,
-			length: 8,
-		},
-	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := testCase.value.AppendAll([]int{10, 20, 30})
-			assert.Equal(t, result.Length(), testCase.length, fmt.Sprintf("expected %d but value is %d", testCase.length, result.Length()))
-		})
+func TestChaining(t *testing.T) {
+	isEven := func(value int) bool { return value%2 == 0 }
+
+	got := collection.Of(1, 2, 3, 4, 5, 6).
+		Filter(isEven).
+		Map(strconv.Itoa).
+		Map(strings.ToUpper).
+		ToSlice()
+
+	if !slices.Equal(got, []string{"2", "4", "6"}) {
+		t.Errorf("chain = %v, want [2 4 6]", got)
 	}
 }
 
-func TestMapList(t *testing.T) {
-	var mapper = strconv.Itoa
-	testCases := []struct {
-		name     string
-		value    List[int]
-		expected List[string]
-	}{
-		{
-			name:     "Empty List",
-			value:    emptyList,
-			expected: Empty[string](),
-		},
-		{
-			name:     "Single Element List",
-			value:    singleElementList,
-			expected: Of[string]("10"),
-		},
-		{
-			name:     "Multiple Elements List",
-			value:    multipleElementsList,
-			expected: OfSlice[string]([]string{"1", "2", "3", "4", "5"}),
-		},
+func TestFlatMap(t *testing.T) {
+	twice := func(value int) collection.List[string] {
+		s := strconv.Itoa(value)
+		return collection.Of(s, s)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := MapList[int, string](testCase.value, mapper)
-			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
-		})
+
+	got := collection.Of(1, 2).FlatMap(twice).ToSlice()
+	if !slices.Equal(got, []string{"1", "1", "2", "2"}) {
+		t.Errorf("FlatMap = %v, want [1 1 2 2]", got)
 	}
 }
 
-func TestFilterList(t *testing.T) {
-	testCases := []struct {
-		name     string
-		value    List[int]
-		expected List[int]
-	}{
-		{
-			name:     "Empty List",
-			value:    emptyList,
-			expected: Empty[int](),
-		},
-		{
-			name:     "Single Element List",
-			value:    singleElementList,
-			expected: Of[int](10),
-		},
-		{
-			name:     "Multiple Elements List",
-			value:    multipleElementsList,
-			expected: OfSlice[int]([]int{2, 4}),
-		},
+func TestFilterFoldForEach(t *testing.T) {
+	l := collection.Of(1, 2, 3, 4)
+
+	if got := l.Filter(func(v int) bool { return v > 2 }).ToSlice(); !slices.Equal(got, []int{3, 4}) {
+		t.Errorf("Filter = %v, want [3 4]", got)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := testCase.value.Filter(evenPredicate)
-			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
-		})
+
+	sum := l.Fold(0, func(acc, value int) int { return acc + value })
+	if sum != 10 {
+		t.Errorf("Fold = %d, want 10", sum)
+	}
+
+	// Fold can change the type too.
+	var joined string = l.Fold("", func(acc string, value int) string { return acc + strconv.Itoa(value) })
+	if joined != "1234" {
+		t.Errorf("Fold to string = %q, want %q", joined, "1234")
+	}
+
+	seen := 0
+	l.ForEach(func(value int) { seen += value })
+	if seen != 10 {
+		t.Errorf("ForEach summed %d, want 10", seen)
 	}
 }
 
-func TestRemoveFromList(t *testing.T) {
-	testCases := []struct {
-		name          string
-		original      List[int]
-		valueToRemove int
-		expected      List[int]
-	}{
-		{
-			name:          "Empty List",
-			original:      emptyList,
-			valueToRemove: 10,
-			expected:      Empty[int](),
-		},
-		{
-			name:          "Single Element List with element removed",
-			original:      singleElementList,
-			valueToRemove: 10,
-			expected:      Empty[int](),
-		},
-		{
-			name:          "Single Element List without element removed",
-			original:      singleElementList,
-			valueToRemove: 5,
-			expected:      Of[int](10),
-		},
-		{
-			name:          "Multiple Elements List",
-			original:      multipleElementsList,
-			valueToRemove: 3,
-			expected:      OfSlice[int]([]int{1, 2, 4, 5}),
-		},
+func TestReverse(t *testing.T) {
+	if got := collection.Of(1, 2, 3).Reverse().ToSlice(); !slices.Equal(got, []int{3, 2, 1}) {
+		t.Errorf("Reverse = %v, want [3 2 1]", got)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := testCase.original.Remove(testCase.valueToRemove)
-			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
-		})
+	if !collection.Empty[int]().Reverse().IsEmpty() {
+		t.Error("reversing an empty list gives an empty list")
 	}
 }
 
-func TestRemoveFromListWithPredicate(t *testing.T) {
-	testCases := []struct {
-		name      string
-		original  List[int]
-		predicate func(value int) bool
-		expected  List[int]
-	}{
-		{
-			name:      "Empty List",
-			original:  emptyList,
-			predicate: evenPredicate,
-			expected:  Empty[int](),
-		},
-		{
-			name:      "Single Element List with element removed",
-			original:  singleElementList,
-			predicate: evenPredicate,
-			expected:  Empty[int](),
-		},
-		{
-			name:      "Single Element List without element removed",
-			original:  singleElementList,
-			predicate: func(value int) bool { return value == 5 },
-			expected:  Of[int](10),
-		},
-		{
-			name:      "Multiple Elements List",
-			original:  multipleElementsList,
-			predicate: evenPredicate,
-			expected:  OfSlice[int]([]int{1, 3, 5}),
-		},
+func TestInsert(t *testing.T) {
+	l := collection.Of(1, 2, 4)
+
+	inserted, err := l.Insert(2, 3)
+	if err != nil {
+		t.Fatalf("Insert returned %v", err)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := testCase.original.RemovePredicate(testCase.predicate)
-			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
-		})
+	if got := inserted.ToSlice(); !slices.Equal(got, []int{1, 2, 3, 4}) {
+		t.Errorf("Insert = %v, want [1 2 3 4]", got)
+	}
+
+	if atEnd, err := l.Insert(3, 9); err != nil || atEnd.Length() != 4 {
+		t.Errorf("Insert at the end failed: %v", err)
+	}
+
+	// The error must name the caller's index, not the recursion's.
+	if _, err := l.Insert(42, 9); err == nil || !strings.Contains(err.Error(), "42") {
+		t.Errorf("Insert(42) error = %v, want it to mention index 42", err)
+	}
+	if _, err := l.Insert(-1, 9); err == nil || !strings.Contains(err.Error(), "-1") {
+		t.Errorf("Insert(-1) error = %v, want it to mention index -1", err)
 	}
 }
 
-func TestInsertInList(t *testing.T) {
-	testCases := []struct {
-		name         string
-		original     List[int]
-		index        int
-		expected     List[int]
-		checkError   bool
-		errorMessage string
-	}{
-		{
-			name:       "Empty List index 0",
-			original:   emptyList,
-			index:      0,
-			expected:   Of[int](7),
-			checkError: false,
-		},
-		{
-			name:         "Empty List negative index",
-			original:     emptyList,
-			index:        -1,
-			expected:     Empty[int](),
-			checkError:   true,
-			errorMessage: "index out of range -1 on empty List",
-		},
-		{
-			name:         "Empty List index > 0",
-			original:     emptyList,
-			index:        1,
-			expected:     Empty[int](),
-			checkError:   true,
-			errorMessage: "index out of range 1 on empty List",
-		},
-		{
-			name:       "Single Element List index 0",
-			original:   singleElementList,
-			index:      0,
-			expected:   OfSlice[int]([]int{7, 10}),
-			checkError: false,
-		},
-		{
-			name:       "Single Element List index 1",
-			original:   singleElementList,
-			index:      1,
-			expected:   OfSlice[int]([]int{10, 7}),
-			checkError: false,
-		},
-		{
-			name:         "Single Element List index > 1",
-			original:     singleElementList,
-			index:        2,
-			expected:     Empty[int](),
-			checkError:   true,
-			errorMessage: "index out of range 1 on empty List",
-		},
-		{
-			name:         "Single Element List index < 0",
-			original:     singleElementList,
-			index:        -1,
-			expected:     Empty[int](),
-			checkError:   true,
-			errorMessage: "index out of range -1 on List",
-		},
-		{
-			name:       "Multiple Elements List index 0",
-			original:   multipleElementsList,
-			index:      0,
-			expected:   OfSlice[int]([]int{7, 1, 2, 3, 4, 5}),
-			checkError: false,
-		},
-		{
-			name:       "Multiple Elements List index 3",
-			original:   multipleElementsList,
-			index:      3,
-			expected:   OfSlice[int]([]int{1, 2, 3, 7, 4, 5}),
-			checkError: false,
-		},
-		{
-			name:         "Multiple Elements List index out of bounds",
-			original:     multipleElementsList,
-			index:        7,
-			expected:     Empty[int](),
-			checkError:   true,
-			errorMessage: "index out of range 2 on empty List",
-		},
-		{
-			name:         "Multiple Elements List negative index",
-			original:     multipleElementsList,
-			index:        -1,
-			expected:     Empty[int](),
-			checkError:   true,
-			errorMessage: "index out of range -1 on List",
-		},
+func TestRemove(t *testing.T) {
+	l := collection.Of(1, 2, 3, 2)
+
+	if got := collection.Remove(l, 2).ToSlice(); !slices.Equal(got, []int{1, 3}) {
+		t.Errorf("Remove = %v, want [1 3]", got)
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result, err := testCase.original.Insert(testCase.index, 7)
-			if testCase.checkError {
-				assert.Error(t, err, testCase.errorMessage, "index of range error was expected")
-				if err == nil {
-					t.Errorf("index of range error was expected")
-				}
-			} else if result != testCase.expected {
-				t.Errorf("expected %+v but value is %+v", testCase.expected, result)
-			}
-		})
+	if got := collection.Remove(l, 9).ToSlice(); !slices.Equal(got, []int{1, 2, 3, 2}) {
+		t.Errorf("removing an absent value must change nothing, got %v", got)
 	}
 }
 
-func TestReverseList(t *testing.T) {
-	testCases := []struct {
-		name     string
-		original List[int]
-		expected List[int]
-	}{
-		{
-			name:     "Empty List",
-			original: emptyList,
-			expected: Empty[int](),
-		},
-		{
-			name:     "Single Element List",
-			original: singleElementList,
-			expected: Of[int](10),
-		},
-		{
-			name:     "Multiple Elements List",
-			original: multipleElementsList,
-			expected: OfSlice[int]([]int{5, 4, 3, 2, 1}),
-		},
+func TestString(t *testing.T) {
+	if got := collection.Of(1, 2, 3).String(); got != "List(1, 2, 3)" {
+		t.Errorf("String = %q, want %q", got, "List(1, 2, 3)")
 	}
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result := testCase.original.Reverse()
-			assert.Equal(t, result, testCase.expected, fmt.Sprintf("expected %+v but value is %+v", testCase.expected, result))
-		})
+	if got := collection.Empty[int]().String(); got != "List()" {
+		t.Errorf("empty String = %q, want %q", got, "List()")
+	}
+}
+
+// Regression guard: building a list used to be O(n^2) in allocations.
+func TestBuildingIsLinear(t *testing.T) {
+	alloc := func(n int) float64 {
+		values := make([]int, n)
+		return testing.AllocsPerRun(1, func() { collection.Of(values...) })
+	}
+
+	small, large := alloc(1000), alloc(2000)
+	if large > 3*small {
+		t.Errorf("building 2000 elements took %.0f allocations vs %.0f for 1000: not linear", large, small)
 	}
 }
