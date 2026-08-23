@@ -17,9 +17,6 @@ control.Some(user).Map(User.Name).Filter(nonEmpty).Map(strings.ToUpper).OrElse("
 No other Go library does both today: `Option` is a plain struct, there is no
 interface and no boxing, and the zero value is `None` rather than a nil panic.
 
-> **Status** — `api/collection` still has the older interface-based design and is
-> next in line. Expect it to change.
-
 ## Requirements
 
 Go 1.27 or later. Generic methods are the whole point of the API, and they do not
@@ -136,23 +133,48 @@ See [`api/tuple/example_test.go`](./api/tuple/example_test.go).
 
 ### List
 
-An immutable, persistent linked list. This package has not been reworked yet: it
-is still interface-based, and `Map` is a package-level function.
+An immutable, persistent singly linked list. The zero value is the empty list.
+`Prepend`, `Head`, `Tail`, `Length` and `IsEmpty` are O(1); everything that has
+to walk the list is O(n) and says so in its godoc.
 
 ```go
 import "github.com/glours/go2funk/api/collection"
 
-list := collection.OfSlice([]int{1, 2, 3, 4, 5})
-list = list.Append(6)
-fmt.Println(list.Length())  // 6
+list := collection.Of(1, 2, 3, 4, 5)
+
+fmt.Println(list.Length(), list.Head().OrElse(-1))  // 5 1
 
 isEven := func(value int) bool { return value%2 == 0 }
-asStrings := collection.MapList(list.Filter(isEven), strconv.Itoa)
-fmt.Println(asStrings.Length(), asStrings.IsEmpty())  // 3 false
+fmt.Println(list.Filter(isEven).Map(strconv.Itoa))  // List(2, 4)
+
+// Prepend is O(1) and the original list is untouched.
+fmt.Println(list.Prepend(0), list)  // List(0, 1, 2, 3, 4, 5) List(1, 2, 3, 4, 5)
 ```
 
-> **Known limitation** — `List` exposes no way to read its elements back: there is
-> no `Head`, `Get`, `ToSlice` or iterator. This is the subject of the next rework.
+`Head` and `Get` return an `Option`, so reading an element out of range is a
+value rather than a panic or a second return.
+
+`All` returns an `iter.Seq[T]`, which makes a `List` usable directly in a
+`for range` loop and with anything else that speaks the Go iterator protocol:
+
+```go
+for value := range list.All() {
+    fmt.Println(value)
+}
+
+collection.Collect(seq)  // iter.Seq[T] -> List[T]
+```
+
+`Fold` combines from the left and can change the type:
+
+```go
+sum := list.Fold(0, func(acc, value int) int { return acc + value })
+joined := list.Fold("", func(acc string, value int) string { return acc + strconv.Itoa(value) })
+```
+
+Also available: `Tail`, `Append`, `AppendAll`, `Reverse`, `Insert`, `FlatMap`,
+`ForEach`, `ToSlice`, `String`, and `collection.Remove` for lists of a
+comparable type.
 
 See [`api/collection/example_test.go`](./api/collection/example_test.go).
 
