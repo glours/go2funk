@@ -14,27 +14,32 @@ type Try[A any] interface {
 
 // MapTry maps the element of a Try[A] to a new Try with element of type B.
 // the mapper function should take a A value and return a B value.
+// a failure is propagated unchanged, keeping its cause.
 func MapTry[A, B any](try Try[A], mapper func(A) B) Try[B] {
 	if try.IsFailure() {
-		return Failure[B]{}
+		_, cause := try.OrElseCause()
+		return FailureOf[B](cause)
 	}
 	return Success[B]{mapper(try.OrElse(*new(A)))}
 }
 
 // FlatMapTry maps the element of a Try[A] to a new Try with element of type B.
 // the mapper function should take a A value and return a Try[B] as result.
+// a failure is propagated unchanged, keeping its cause.
 func FlatMapTry[A, B any](try Try[A], mapper func(A) Try[B]) Try[B] {
 	if try.IsFailure() {
-		return Failure[B]{}
+		_, cause := try.OrElseCause()
+		return FailureOf[B](cause)
 	}
 	return mapper(try.OrElse(*new(A)))
 }
 
 // TryOf returns a Try[A] depending of the execution result of the lambda passed as parameter.
+// when the lambda returns an error, that error becomes the cause of the Failure.
 func TryOf[A any](lambda func() (A, error)) Try[A] {
 	value, err := lambda()
 	if err != nil {
-		return Failure[A]{}
+		return FailureOf[A](err)
 	}
 	return Success[A]{value}
 }

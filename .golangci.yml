@@ -1,0 +1,54 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - depguard
+    - errorlint
+    - gocritic
+    - misspell
+    - predeclared
+    - revive
+    - unconvert
+
+  settings:
+    # Enforces the zero-runtime-dependency rule: nothing outside the standard
+    # library may be imported by the library code. Tests are exempt.
+    depguard:
+      rules:
+        library:
+          files:
+            - "**/api/**/*.go"
+            - "!$test"
+          allow:
+            - $gostd
+          deny:
+            - pkg: "github.com"
+              desc: go2funk has no runtime dependencies, see AGENTS.md
+            - pkg: "golang.org/x"
+              desc: go2funk has no runtime dependencies, see AGENTS.md
+
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+
+  exclusions:
+    presets:
+      - comments
+      - std-error-handling
+    rules:
+      # Test helpers and examples do not need doc comments.
+      - path: _test\.go
+        linters:
+          - revive
+
+issues:
+  # Report everything: golangci-lint truncates to 3 per linter by default.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofmt

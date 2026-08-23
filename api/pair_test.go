@@ -8,11 +8,9 @@ import (
 )
 
 var (
-	_          = Pair[int, string]{10, "ten"}
-	pair       = NewPair[int, string](10, "ten")
-	mapperLeft = func(value int) string {
-		return strconv.Itoa(value)
-	}
+	_           = Pair[int, string]{10, "ten"}
+	pair        = NewPair[int, string](10, "ten")
+	mapperLeft  = strconv.Itoa
 	mapperRight = func(value string) []byte {
 		return []byte(value)
 	}

@@ -10,7 +10,7 @@ func NewPair[L, R any](left L, right R) Pair[L, R] {
 }
 
 func MapPair[L, R, T, U any](pair Pair[L, R], mapperLeft func(L) T, mapperRight func(R) U) Pair[T, U] {
-	return Pair[T, U]{ mapperLeft(pair.left), mapperRight(pair.right)}
+	return Pair[T, U]{mapperLeft(pair.left), mapperRight(pair.right)}
 }
 
 func MapLeftPair[L, R, U any](pair Pair[L, R], mapper func(L) U) Pair[U, R] {

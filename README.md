@@ -1,112 +1,213 @@
 # Go2Funk
 
-Go2Funk is a pet project to test Go2 Generics and see how this new feature help us to implement some functional
-structures easily.  
-The idea is to keep this repo as much as possible dependency free.
+Go2Funk is a pet project exploring what Go generics make possible: implementing
+purely functional structures — `Option`, `Try`, `Either`, `List`, `Pair` — the way
+[Vavr](https://vavr.io) does for Java.
 
-## How to compile
-Golang `1.18` has been release with type parameters.   
-You can now, compile and test your code as usual (`go build`, `go test` ...)
+**No runtime dependencies.** The `api/` packages import nothing outside the Go
+standard library, and that is a hard constraint rather than a preference.
 
-You can also use Docker Dev Environments to develop this project:
-* Open Docker Desktop
-* Go to Dev Environments view
-* Copy/Paste the git repo URL to start working!   
-  
-Check the configuration of the base image in the `.docker/config.json` config file
+> **Status** — the project is being picked back up. Go 1.27 (August 2026) added
+> generic methods, which lifts the language limitation the current API was
+> designed around, so a rework is under way. Expect the API below to change.
 
+## Requirements
 
-## Build
+Go 1.20 or later.
 
-use `go build  ./...` or if you
-use [Goland then configure external tools](https://www.jetbrains.com/help/go/how-to-use-type-parameters-for-generic-programming.html)
+## Install
 
-## Run tests
-
-use `go test -v ./...` or if you
-use [Goland then configure external tools](https://www.jetbrains.com/help/go/how-to-use-type-parameters-for-generic-programming.html)
+```sh
+go get github.com/glours/go2funk
+```
 
 ## Usage
 
-### Collection types
+Every snippet below is backed by a runnable `Example` test, so it compiles and its
+output is verified by `go test ./...`.
 
-#### List
+### Option
 
-```go
-myIntArray := []int{1, 2, 3, 4, 5}
-myList := OfSlice[int](myIntArray)
-
-myList = myList.Append(6)
-fmt.Println(myList.Length())
-
-var mapper = func (value int) string { return strconv.Itoa(value) }
-
-var evenPredicate = func (value int) bool { return value % 2 == 0 }
-
-myList = MapList[int, string](myList.Filter(evenPredicate), mapper); 
-```
-
-For more usage details check [tests](./api/collection/list_test.go).
-
-### Control types
-
-#### Option
+An `Option[T]` is either `Some` (a value is present) or `None` (it is not).
 
 ```go
-empytOption := Empty[int]()
-someOption := Of[int](10)
+import "github.com/glours/go2funk/api/control"
 
-fmt.Println(emptyOption.GetOrElse(5)) // Print 5
-fmt.Println(someOption.GetOrElse(5)) // Print 10
+empty := control.Empty[int]()
+some := control.Of(10)
 
-var evenPredicate = func (value int) bool { return value % 2 == 0 }
-fmt.Println(some.Filter(eventPredicate).IsEmpty()) #Print false
+fmt.Println(empty.OrElse(5))  // 5
+fmt.Println(some.OrElse(5))   // 10
 
-var mapper = func (value int) string { return strconv.Itoa(value) }
-fmt.Println(MapOption(someOption, mapper)) // Print "10"
+isEven := func(value int) bool { return value%2 == 0 }
+fmt.Println(some.Filter(isEven).IsEmpty())  // false
+
+asString := control.MapOption(some, strconv.Itoa)
+fmt.Println(asString.OrElse("none"))  // 10
 ```
 
-For more usage details check [tests](./api/control/option_test.go).
-
-#### Try
+`OrElseError` turns an empty `Option` into a Go error:
 
 ```go
-defaultTryError := errors.New("default Try error")
+missing := errors.New("no value")
 
-failure := FailureOf[int](defaultTryError)
-success := SuccessOf[int](10)
+_, err := control.Empty[int]().OrElseError(missing)
+fmt.Println(err)  // no value
 
-fmt.Println(failure.GetOrElse(5)) // Print 5
-fmt.Println(someOption.GetOrElse(5)) // Print 10
-
-fmt.Println(failure.GetOrElseCause()) // Print "default Try error"
-fmt.Println(someOption.GetOrElseCause()) // Print 10
-
-successLambda := func ()(int, error) { return 10, nil})
-failureLambda := func ()(int, error) {return 0, defaultTryError }
-
-fmt.Println(TryOf(failureLambda).IsFailure()) // Print true
-fmt.Println(TryOf(successLambda).IsFailure()) // Print false
+value, err := control.Of(10).OrElseError(missing)
+fmt.Println(value, err)  // 10 <nil>
 ```
 
-For more usage details check [tests](./api/control/try_test.go).
+`Map` and `FlatMap` are package-level functions rather than methods
+(`MapOption`, `FlatMapOption`) because a method cannot introduce a new type
+parameter before Go 1.27.
 
-#### Either
+See [`api/control/example_test.go`](./api/control/example_test.go) and
+[`api/control/option_test.go`](./api/control/option_test.go).
+
+### Try
+
+A `Try[A]` is either a `Success` carrying a value or a `Failure` carrying an error.
 
 ```go
-defaultEitherError = errors.New("default Either error")
-right = RightOf[error, int](10)
-left = LeftOf[error, int](defaultEitherError)
+import "github.com/glours/go2funk/api/control"
 
-fmt.Println(right.GetOrElse(20)) // Print 10
-fmt.Println(left.GetOrElse(20)) // Print 20
+boom := errors.New("boom")
 
-fmt.Println(right.GetLeftOrElse(error.New("new error"))) // Print "new error"
-fmt.Println(left.GetOrElse(error.New("new error"))) // Print "default Either error"
+success := control.SuccessOf(10)
+failure := control.FailureOf[int](boom)
 
-var mapper = func (value int) string { return strconv.Itoa(value) }
-var mapRight Either[error, string] = MapEither(right, mapper)
-fmt.Println(mapRight.GetOrElse("good")) // Print "10"
+fmt.Println(success.IsFailure(), failure.IsFailure())  // false true
+fmt.Println(success.OrElse(5), failure.OrElse(5))      // 10 5
+
+_, err := failure.OrElseCause()
+fmt.Println(err)  // boom
+
+fmt.Println(control.TryOf(func() (int, error) { return 10, nil }).IsFailure())   // false
+fmt.Println(control.TryOf(func() (int, error) { return 0, boom }).IsFailure())   // true
 ```
 
-For more usage details check [tests](./api/control/either_test.go).
+See [`api/control/example_test.go`](./api/control/example_test.go) and
+[`api/control/try_test.go`](./api/control/try_test.go).
+
+### Either
+
+An `Either[L, R]` holds one of two types. By convention `Right` carries the
+expected value and `Left` the alternative one.
+
+```go
+import "github.com/glours/go2funk/api/control"
+
+boom := errors.New("boom")
+noError := errors.New("no error")
+
+right := control.RightOf[error](10)
+left := control.LeftOf[error, int](boom)
+
+fmt.Println(right.IsRight(), left.IsLeft())                      // true true
+fmt.Println(right.GetOrElse(20), left.GetOrElse(20))             // 10 20
+fmt.Println(right.GetLeftOrElse(noError), left.GetLeftOrElse(noError))  // no error boom
+
+asString := control.MapEither(right, strconv.Itoa)
+fmt.Println(asString.GetOrElse("none"))  // 10
+
+fmt.Println(right.Swap().GetLeftOrElse(0))  // 10
+```
+
+`MapEither` and `FlatMapEither` operate on the `Right` side; a `Left` passes
+through unchanged.
+
+See [`api/control/example_test.go`](./api/control/example_test.go) and
+[`api/control/either_test.go`](./api/control/either_test.go).
+
+### List
+
+An immutable, persistent linked list.
+
+```go
+import "github.com/glours/go2funk/api/collection"
+
+list := collection.OfSlice([]int{1, 2, 3, 4, 5})
+list = list.Append(6)
+fmt.Println(list.Length())  // 6
+
+isEven := func(value int) bool { return value%2 == 0 }
+evens := list.Filter(isEven)
+fmt.Println(evens.Length())  // 3
+
+asStrings := collection.MapList(evens, strconv.Itoa)
+fmt.Println(asStrings.Length(), asStrings.IsEmpty())  // 3 false
+```
+
+`Insert` returns an error when the index is out of range:
+
+```go
+list := collection.OfSlice([]int{1, 2, 4})
+
+inserted, err := list.Insert(2, 3)
+fmt.Println(inserted.Length(), err)  // 4 <nil>
+
+_, err = list.Insert(42, 3)
+fmt.Println(err != nil)  // true
+```
+
+> **Known limitation** — `List` currently exposes no exported way to read its
+> elements back out: there is no `Head`, `Get`, `ToSlice` or iterator. This is
+> part of the planned rework.
+
+See [`api/collection/example_test.go`](./api/collection/example_test.go) and
+[`api/collection/list_test.go`](./api/collection/list_test.go).
+
+### Pair
+
+A two-element product type, with independent mappers for each side.
+
+```go
+import "github.com/glours/go2funk/api"
+
+pair := api.NewPair("ten", 10)
+fmt.Println(pair.GetLeft(), pair.GetRight())  // ten 10
+
+asString := api.MapRightPair(pair, strconv.Itoa)
+fmt.Println(asString.GetRight())  // 10
+
+both := api.MapPair(pair, strings.ToUpper, func(value int) bool { return value > 5 })
+fmt.Println(both.GetLeft(), both.GetRight())  // TEN true
+```
+
+See [`api/example_test.go`](./api/example_test.go) and
+[`api/pair_test.go`](./api/pair_test.go).
+
+## Development
+
+```sh
+go build ./...          # build
+go test ./...           # run the test suite, examples included
+go test -race -cover ./...
+go vet ./...            # static checks
+gofmt -l .              # must print nothing
+golangci-lint run ./... # full lint, config in .golangci.yml
+```
+
+The no-runtime-dependency rule is enforced two ways: by `depguard` in
+`.golangci.yml`, which rejects any non-standard-library import under `api/`, and
+by this command, which must print nothing:
+
+```sh
+go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}' ./... | grep -v go2funk
+```
+
+Both run in CI, along with the build and test matrix.
+
+### Releases
+
+Pushing a `v*` tag triggers GoReleaser, which publishes the GitHub release, its
+notes and the source archive. Config is in `.goreleaser.yaml`; check it with
+`goreleaser check` and dry-run with `goreleaser release --snapshot --clean`.
+
+### Contributing
+
+[`AGENTS.md`](AGENTS.md) holds the development rules for this repository — no
+runtime dependencies, test-driven development, black-box tests, and the API
+design decisions. They apply to humans and coding agents alike. `CLAUDE.md` is a
+symlink to it.

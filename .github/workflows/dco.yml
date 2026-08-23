@@ -1,0 +1,39 @@
+name: DCO
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: sign-off
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole PR range has to be walked, not just its tip.
+          fetch-depth: 0
+
+      - name: Every commit is signed off
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          failed=0
+          for commit in $(git rev-list "$BASE..$HEAD"); do
+            author=$(git log -1 --format='%an <%ae>' "$commit")
+            short=$(git log -1 --format='%h %s' "$commit")
+            if git log -1 --format='%B' "$commit" | grep -qiF "Signed-off-by: $author"; then
+              echo "ok   $short"
+            else
+              echo "::error::missing 'Signed-off-by: $author' on $short"
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "Amend with 'git commit -s --amend' or rebase with 'git rebase --signoff'."
+            echo "See https://developercertificate.org/"
+            exit 1
+          fi
