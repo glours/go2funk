@@ -1,19 +1,29 @@
 # Go2Funk
 
 Go2Funk is a pet project exploring what Go generics make possible: implementing
-purely functional structures — `Option`, `Try`, `Either`, `List`, `Pair` — the way
-[Vavr](https://vavr.io) does for Java.
+purely functional structures — `Option`, `Either`, `Result`, `List`, `Pair` — the
+way [Vavr](https://vavr.io) does for Java.
 
 **No runtime dependencies.** The `api/` packages import nothing outside the Go
 standard library, and that is a hard constraint rather than a preference.
 
-> **Status** — the project is being picked back up. Go 1.27 (August 2026) added
-> generic methods, which lifts the language limitation the current API was
-> designed around, so a rework is under way. Expect the API below to change.
+Go 1.27 added generic methods, so `Map` can change the type it carries *and* stay
+chainable:
+
+```go
+control.Some(user).Map(User.Name).Filter(nonEmpty).Map(strings.ToUpper).OrElse("anonymous")
+```
+
+No other Go library does both today: `Option` is a plain struct, there is no
+interface and no boxing, and the zero value is `None` rather than a nil panic.
+
+> **Status** — `api/collection` still has the older interface-based design and is
+> next in line. Expect it to change.
 
 ## Requirements
 
-Go 1.20 or later.
+Go 1.27 or later. Generic methods are the whole point of the API, and they do not
+exist before that.
 
 ## Install
 
@@ -28,101 +38,106 @@ output is verified by `go test ./...`.
 
 ### Option
 
-An `Option[T]` is either `Some` (a value is present) or `None` (it is not).
+`Option[T]` is either `Some`, holding a value, or `None`. Its zero value is
+`None`, so it needs no initialisation.
 
 ```go
 import "github.com/glours/go2funk/api/control"
 
-empty := control.Empty[int]()
-some := control.Of(10)
+some := control.Some(10)
+none := control.None[int]()
 
-fmt.Println(empty.OrElse(5))  // 5
-fmt.Println(some.OrElse(5))   // 10
+fmt.Println(some.OrElse(5), none.OrElse(5))  // 10 5
+
+// Map is a method and changes the type it carries.
+fmt.Println(some.Map(strconv.Itoa).Map(strings.ToUpper).OrElse("none"))  // 10
 
 isEven := func(value int) bool { return value%2 == 0 }
-fmt.Println(some.Filter(isEven).IsEmpty())  // false
+fmt.Println(some.Filter(isEven).IsDefined())  // true
 
-asString := control.MapOption(some, strconv.Itoa)
-fmt.Println(asString.OrElse("none"))  // 10
+var zero control.Option[int]
+fmt.Println(zero.IsEmpty())  // true — no panic
 ```
 
-`OrElseError` turns an empty `Option` into a Go error:
+Interop with the Go idioms it replaces:
 
 ```go
-missing := errors.New("no value")
+value, ok := counts["ten"]
+found := control.FromTuple(value, ok)      // "comma ok" -> Option
 
-_, err := control.Empty[int]().OrElseError(missing)
-fmt.Println(err)  // no value
+value, err := found.OrElseError(errors.New("no value"))  // Option -> (T, error)
 
-value, err := control.Of(10).OrElseError(missing)
-fmt.Println(value, err)  // 10 <nil>
+found.ToSlice()      // []int{10}
+found.ToPointer()    // *int, nil when empty
+control.FromPointer(p)
 ```
 
-`Map` and `FlatMap` are package-level functions rather than methods
-(`MapOption`, `FlatMapOption`) because a method cannot introduce a new type
-parameter before Go 1.27.
+Also available: `Get`, `OrElseGet`, `Or`, `FlatMap`, `Fold`, `ForEach`.
 
-See [`api/control/example_test.go`](./api/control/example_test.go) and
-[`api/control/option_test.go`](./api/control/option_test.go).
-
-### Try
-
-A `Try[A]` is either a `Success` carrying a value or a `Failure` carrying an error.
-
-```go
-import "github.com/glours/go2funk/api/control"
-
-boom := errors.New("boom")
-
-success := control.SuccessOf(10)
-failure := control.FailureOf[int](boom)
-
-fmt.Println(success.IsFailure(), failure.IsFailure())  // false true
-fmt.Println(success.OrElse(5), failure.OrElse(5))      // 10 5
-
-_, err := failure.OrElseCause()
-fmt.Println(err)  // boom
-
-fmt.Println(control.TryOf(func() (int, error) { return 10, nil }).IsFailure())   // false
-fmt.Println(control.TryOf(func() (int, error) { return 0, boom }).IsFailure())   // true
-```
-
-See [`api/control/example_test.go`](./api/control/example_test.go) and
-[`api/control/try_test.go`](./api/control/try_test.go).
+See [`api/control/example_test.go`](./api/control/example_test.go).
 
 ### Either
 
-An `Either[L, R]` holds one of two types. By convention `Right` carries the
-expected value and `Left` the alternative one.
+`Either[L, R]` holds one of two values. By convention `Right` carries the expected
+one, so `Map`, `FlatMap` and `FilterOrElse` work on the right side and let a
+`Left` through untouched, value intact.
 
 ```go
-import "github.com/glours/go2funk/api/control"
+right := control.Right[string](10)
+left := control.Left[string, int]("nope")
 
-boom := errors.New("boom")
-noError := errors.New("no error")
+fmt.Println(right.OrElse(20), left.OrElse(20))         // 10 20
+fmt.Println(right.Map(strconv.Itoa).OrElse("none"))    // 10
+fmt.Println(left.Map(strconv.Itoa).LeftOrElse("?"))    // nope
 
-right := control.RightOf[error](10)
-left := control.LeftOf[error, int](boom)
-
-fmt.Println(right.IsRight(), left.IsLeft())                      // true true
-fmt.Println(right.GetOrElse(20), left.GetOrElse(20))             // 10 20
-fmt.Println(right.GetLeftOrElse(noError), left.GetLeftOrElse(noError))  // no error boom
-
-asString := control.MapEither(right, strconv.Itoa)
-fmt.Println(asString.GetOrElse("none"))  // 10
-
-fmt.Println(right.Swap().GetLeftOrElse(0))  // 10
+fmt.Println(right.Fold(
+    func(s string) string { return "left: " + s },
+    func(v int) string { return "right: " + strconv.Itoa(v) },
+))  // right: 10
 ```
 
-`MapEither` and `FlatMapEither` operate on the `Right` side; a `Left` passes
-through unchanged.
+Also available: `Get`, `GetLeft`, `Swap`, `MapLeft`, `Or`, `OrElseGet`, `ForEach`,
+`ToOption`.
 
-See [`api/control/example_test.go`](./api/control/example_test.go) and
-[`api/control/either_test.go`](./api/control/either_test.go).
+### Result
+
+`Result[T]` is a type alias for `Either[error, T]`, so it *is* an `Either` and
+inherits every one of its methods.
+
+```go
+parse := func(s string) control.Result[int] {
+    return control.Try(func() (int, error) { return strconv.Atoi(s) })
+}
+
+fmt.Println(parse("42").Map(func(v int) int { return v * 2 }).OrElse(-1))  // 84
+
+// The cause survives Map; Unwrap hands it back to the Go idiom.
+_, err := control.Unwrap(parse("nope").Map(strconv.Itoa))
+fmt.Println(err)  // strconv.Atoi: parsing "nope": invalid syntax
+```
+
+`Ok`, `Err`, `Try` and `Unwrap` are package-level functions rather than methods
+because a type alias cannot declare methods of its own.
+
+### Pair
+
+```go
+import "github.com/glours/go2funk/api/tuple"
+
+pair := tuple.New("ten", 10)
+fmt.Println(pair.Left(), pair.Right())  // ten 10
+
+left, right := pair.Unpack()
+fmt.Println(pair.MapRight(strconv.Itoa).Right())  // 10
+fmt.Println(pair.Swap().Left())                   // 10
+```
+
+See [`api/tuple/example_test.go`](./api/tuple/example_test.go).
 
 ### List
 
-An immutable, persistent linked list.
+An immutable, persistent linked list. This package has not been reworked yet: it
+is still interface-based, and `Map` is a package-level function.
 
 ```go
 import "github.com/glours/go2funk/api/collection"
@@ -132,51 +147,14 @@ list = list.Append(6)
 fmt.Println(list.Length())  // 6
 
 isEven := func(value int) bool { return value%2 == 0 }
-evens := list.Filter(isEven)
-fmt.Println(evens.Length())  // 3
-
-asStrings := collection.MapList(evens, strconv.Itoa)
+asStrings := collection.MapList(list.Filter(isEven), strconv.Itoa)
 fmt.Println(asStrings.Length(), asStrings.IsEmpty())  // 3 false
 ```
 
-`Insert` returns an error when the index is out of range:
+> **Known limitation** — `List` exposes no way to read its elements back: there is
+> no `Head`, `Get`, `ToSlice` or iterator. This is the subject of the next rework.
 
-```go
-list := collection.OfSlice([]int{1, 2, 4})
-
-inserted, err := list.Insert(2, 3)
-fmt.Println(inserted.Length(), err)  // 4 <nil>
-
-_, err = list.Insert(42, 3)
-fmt.Println(err != nil)  // true
-```
-
-> **Known limitation** — `List` currently exposes no exported way to read its
-> elements back out: there is no `Head`, `Get`, `ToSlice` or iterator. This is
-> part of the planned rework.
-
-See [`api/collection/example_test.go`](./api/collection/example_test.go) and
-[`api/collection/list_test.go`](./api/collection/list_test.go).
-
-### Pair
-
-A two-element product type, with independent mappers for each side.
-
-```go
-import "github.com/glours/go2funk/api"
-
-pair := api.NewPair("ten", 10)
-fmt.Println(pair.GetLeft(), pair.GetRight())  // ten 10
-
-asString := api.MapRightPair(pair, strconv.Itoa)
-fmt.Println(asString.GetRight())  // 10
-
-both := api.MapPair(pair, strings.ToUpper, func(value int) bool { return value > 5 })
-fmt.Println(both.GetLeft(), both.GetRight())  // TEN true
-```
-
-See [`api/example_test.go`](./api/example_test.go) and
-[`api/pair_test.go`](./api/pair_test.go).
+See [`api/collection/example_test.go`](./api/collection/example_test.go).
 
 ## Development
 
