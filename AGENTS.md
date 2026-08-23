@@ -131,6 +131,9 @@ These are settled decisions, not preferences:
 
 ## Git
 
+- **All commits MUST be signed off (DCO) and signed.** Always pass `--signoff`
+  (`-s`) to `git commit` and `git commit --amend`. Signing is handled by the
+  repository owner's git config; do not disable it.
 - **Never commit, push, tag, or force-push without an explicit instruction.**
   Tags matter here: pushing a `v*` tag publishes a release through GoReleaser.
 - Never `git push --force` on `main`.
