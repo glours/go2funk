@@ -4,87 +4,94 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/glours/go2funk/api/control"
 )
 
 func ExampleOption() {
-	empty := control.Empty[int]()
-	some := control.Of(10)
+	some := control.Some(10)
+	none := control.None[int]()
 
-	fmt.Println(empty.OrElse(5))
-	fmt.Println(some.OrElse(5))
+	fmt.Println(some.OrElse(5), none.OrElse(5))
+
+	// Map is a method and changes the type it carries.
+	fmt.Println(some.Map(strconv.Itoa).Map(strings.ToUpper).OrElse("none"))
 
 	isEven := func(value int) bool { return value%2 == 0 }
-	fmt.Println(some.Filter(isEven).IsEmpty())
+	fmt.Println(some.Filter(isEven).IsDefined())
 
-	asString := control.MapOption(some, strconv.Itoa)
-	fmt.Println(asString.OrElse("none"))
-
-	// Output:
-	// 5
-	// 10
-	// false
-	// 10
-}
-
-func ExampleOption_orElseError() {
-	missing := errors.New("no value")
-
-	_, err := control.Empty[int]().OrElseError(missing)
-	fmt.Println(err)
-
-	value, err := control.Of(10).OrElseError(missing)
-	fmt.Println(value, err)
+	// The zero value is None, not a nil panic.
+	var zero control.Option[int]
+	fmt.Println(zero.IsEmpty())
 
 	// Output:
-	// no value
-	// 10 <nil>
-}
-
-func ExampleTry() {
-	boom := errors.New("boom")
-
-	success := control.SuccessOf(10)
-	failure := control.FailureOf[int](boom)
-
-	fmt.Println(success.IsFailure(), failure.IsFailure())
-	fmt.Println(success.OrElse(5), failure.OrElse(5))
-
-	_, err := failure.OrElseCause()
-	fmt.Println(err)
-
-	fmt.Println(control.TryOf(func() (int, error) { return 10, nil }).IsFailure())
-	fmt.Println(control.TryOf(func() (int, error) { return 0, boom }).IsFailure())
-
-	// Output:
-	// false true
 	// 10 5
-	// boom
-	// false
+	// 10
+	// true
 	// true
 }
 
-func ExampleEither() {
-	boom := errors.New("boom")
-	noError := errors.New("no error")
+func ExampleOption_goInterop() {
+	counts := map[string]int{"ten": 10}
 
-	right := control.RightOf[error](10)
-	left := control.LeftOf[error, int](boom)
+	// The Go "comma ok" idiom lifts straight into an Option.
+	value, ok := counts["ten"]
+	found := control.FromTuple(value, ok)
 
-	fmt.Println(right.IsRight(), left.IsLeft())
-	fmt.Println(right.GetOrElse(20), left.GetOrElse(20))
-	fmt.Println(right.GetLeftOrElse(noError), left.GetLeftOrElse(noError))
+	value, ok = counts["nope"]
+	missing := control.FromTuple(value, ok)
 
-	asString := control.MapEither(right, strconv.Itoa)
-	fmt.Println(asString.GetOrElse("none"))
+	fmt.Println(found.OrElse(-1), missing.OrElse(-1))
 
-	fmt.Println(right.Swap().GetLeftOrElse(0))
+	value, err := missing.OrElseError(errors.New("no value"))
+	fmt.Println(value, err)
+
+	fmt.Println(found.ToSlice(), control.None[int]().ToPointer() == nil)
 
 	// Output:
-	// true true
+	// 10 -1
+	// 0 no value
+	// [10] true
+}
+
+func ExampleEither() {
+	right := control.Right[string](10)
+	left := control.Left[string, int]("nope")
+
+	fmt.Println(right.OrElse(20), left.OrElse(20))
+
+	// Map works on the right side; a Left passes through with its value intact.
+	fmt.Println(right.Map(strconv.Itoa).OrElse("none"))
+	fmt.Println(left.Map(strconv.Itoa).LeftOrElse("?"))
+
+	fmt.Println(right.Fold(
+		func(s string) string { return "left: " + s },
+		func(v int) string { return "right: " + strconv.Itoa(v) },
+	))
+
+	// Output:
 	// 10 20
-	// no error boom
 	// 10
-	// 10
+	// nope
+	// right: 10
+}
+
+func ExampleResult() {
+	parse := func(s string) control.Result[int] {
+		return control.Try(func() (int, error) { return strconv.Atoi(s) })
+	}
+
+	fmt.Println(parse("42").Map(func(v int) int { return v * 2 }).OrElse(-1))
+
+	// The cause survives Map, and Unwrap hands it back to the Go idiom.
+	_, err := control.Unwrap(parse("nope").Map(strconv.Itoa))
+	fmt.Println(err)
+
+	fmt.Println(parse("nope").ToOption().IsEmpty())
+
+	// Output:
+	// 84
+	// strconv.Atoi: parsing "nope": invalid syntax
+	// true
 }

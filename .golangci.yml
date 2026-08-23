@@ -43,6 +43,13 @@ linters:
       - path: _test\.go
         linters:
           - revive
+      # Tests spell out the type on the left-hand side on purpose: that
+      # annotation is the assertion that a generic method changed the type
+      # parameter. Inferring it would remove what the test checks.
+      - path: _test\.go
+        linters:
+          - staticcheck
+        text: "(ST1023|QF1011)"
 
 issues:
   # Report everything: golangci-lint truncates to 3 per linter by default.
