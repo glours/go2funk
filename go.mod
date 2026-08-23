@@ -1,4 +1,4 @@
-module glours/go2funk
+module github.com/glours/go2funk
 
 go 1.20
 
