@@ -13,10 +13,11 @@ below encode decisions that are already settled.
 - Build: `go build ./...`
 - Test all: `go test ./...` (add `-race` before pushing)
 - Test one package: `go test ./api/control/`
-- Test one function: `go test ./api/control/ -run TestOptionMap`
+- Test one function: `go test ./api/control/ -run TestMapChangesTheType`
 - Coverage: `go test -cover ./...`
 - Vet: `go vet ./...`
 - Benchmarks: `go test -bench . -benchmem ./...`
+- Before pushing: `go mod tidy` must leave `go.mod` and `go.sum` unchanged.
 - Requires **Go 1.27+** (generic methods). Never lower the `go` directive in `go.mod`.
 
 ## Zero runtime dependencies — hard rule

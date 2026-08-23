@@ -8,36 +8,51 @@ import (
 )
 
 func ExampleList() {
-	list := collection.OfSlice([]int{1, 2, 3, 4, 5})
-	list = list.Append(6)
-	fmt.Println(list.Length())
+	list := collection.Of(1, 2, 3, 4, 5)
+
+	fmt.Println(list.Length(), list.Head().OrElse(-1))
 
 	isEven := func(value int) bool { return value%2 == 0 }
-	evens := list.Filter(isEven)
-	fmt.Println(evens.Length())
+	fmt.Println(list.Filter(isEven).Map(strconv.Itoa))
 
-	asStrings := collection.MapList(evens, strconv.Itoa)
-	fmt.Println(asStrings.Length(), asStrings.IsEmpty())
+	// Prepend is O(1) and the original list is untouched.
+	fmt.Println(list.Prepend(0), list)
+
+	// The zero value is the empty list.
+	var zero collection.List[int]
+	fmt.Println(zero.IsEmpty(), zero.Head().IsEmpty())
 
 	// Output:
-	// 6
-	// 3
-	// 3 false
+	// 5 1
+	// List(2, 4)
+	// List(0, 1, 2, 3, 4, 5) List(1, 2, 3, 4, 5)
+	// true true
 }
 
-func ExampleList_insert() {
-	list := collection.OfSlice([]int{1, 2, 4})
+func ExampleList_All() {
+	list := collection.Of("a", "b", "c")
 
-	inserted, err := list.Insert(2, 3)
-	fmt.Println(inserted.Length(), err)
+	for value := range list.All() {
+		fmt.Println(value)
+	}
 
-	// Insert reports an error when the index is out of range.
-	// NOTE: the message currently leaks the recursion index rather than the
-	// caller's, so this example only asserts that an error is returned.
-	_, err = list.Insert(42, 3)
-	fmt.Println(err != nil)
+	fmt.Println(collection.Collect(list.All()).Reverse())
 
 	// Output:
-	// 4 <nil>
-	// true
+	// a
+	// b
+	// c
+	// List(c, b, a)
+}
+
+func ExampleList_Fold() {
+	list := collection.Of(1, 2, 3, 4)
+
+	sum := list.Fold(0, func(acc, value int) int { return acc + value })
+	joined := list.Fold("", func(acc string, value int) string { return acc + strconv.Itoa(value) })
+
+	fmt.Println(sum, joined)
+
+	// Output:
+	// 10 1234
 }
