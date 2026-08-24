@@ -1,8 +1,8 @@
 # Go2Funk
 
 Go2Funk is a pet project exploring what Go generics make possible: implementing
-purely functional structures — `Option`, `Either`, `Result`, `List`, `Pair` — the
-way [Vavr](https://vavr.io) does for Java.
+purely functional structures — `Option`, `Either`, `Result`, `Lazy`, `List`,
+`Pair` — the way [Vavr](https://vavr.io) does for Java.
 
 **No runtime dependencies.** The `api/` packages import nothing outside the Go
 standard library, and that is a hard constraint rather than a preference.
@@ -115,6 +115,40 @@ fmt.Println(err)  // strconv.Atoi: parsing "nope": invalid syntax
 
 `Ok`, `Err`, `Try` and `Unwrap` are package-level functions rather than methods
 because a type alias cannot declare methods of its own.
+
+### Lazy
+
+`Lazy[T]` defers a computation until its result is first read, then remembers it.
+The computation runs at most once, however many goroutines ask for it.
+
+```go
+config := control.NewLazy(loadConfig)  // nothing has run yet
+
+config.Get()          // runs loadConfig
+config.Get()          // returns the remembered result
+config.IsEvaluated()  // true
+```
+
+`Map` and `FlatMap` stay lazy — chaining them runs nothing until the result is
+read:
+
+```go
+report := control.NewLazy(fetchRows).Map(summarise).Map(render)
+// still nothing has run
+report.Get()
+```
+
+`Delay` is an alias for `NewLazy`, under the name functional languages give it.
+
+A `Lazy` is a value: copying one shares the memoised result rather than
+restarting the computation. Its zero value has no computation attached and
+yields the zero value of `T`, the way Rust's `LazyCell::default()` does.
+
+`Lazy` carries no notion of absence or failure, and does not need to: use
+`Lazy[Option[T]]` when "not computed yet" has to be told apart from "computed to
+the zero value", and `Lazy[Result[T]]` when the computation can fail.
+
+See [`api/control/example_test.go`](./api/control/example_test.go).
 
 ### Pair
 

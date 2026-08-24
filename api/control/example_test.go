@@ -95,3 +95,48 @@ func ExampleResult() {
 	// strconv.Atoi: parsing "nope": invalid syntax
 	// true
 }
+
+func ExampleLazy() {
+	calls := 0
+	expensive := control.NewLazy(func() int {
+		calls++
+		fmt.Println("computing...")
+		return 42
+	})
+
+	fmt.Println("created, calls:", calls)
+
+	fmt.Println(expensive.Get())
+	fmt.Println(expensive.Get())
+	fmt.Println("calls:", calls, "evaluated:", expensive.IsEvaluated())
+
+	// Output:
+	// created, calls: 0
+	// computing...
+	// 42
+	// 42
+	// calls: 1 evaluated: true
+}
+
+func ExampleLazy_Map() {
+	source := control.NewLazy(func() int {
+		fmt.Println("source runs")
+		return 21
+	})
+
+	// Map stays lazy: nothing runs here.
+	doubled := source.Map(func(value int) int { return value * 2 }).Map(strconv.Itoa)
+	fmt.Println("mapped, evaluated:", doubled.IsEvaluated())
+
+	fmt.Println(doubled.Get())
+
+	// The zero value has no computation and yields the zero value of T.
+	var empty control.Lazy[int]
+	fmt.Println(empty.Get(), empty.IsEvaluated())
+
+	// Output:
+	// mapped, evaluated: false
+	// source runs
+	// 42
+	// 0 true
+}
