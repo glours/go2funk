@@ -56,3 +56,52 @@ func ExampleList_Fold() {
 	// Output:
 	// 10 1234
 }
+
+func ExampleTree() {
+	tree := collection.TreeOf(5, 3, 8, 1, 9)
+
+	fmt.Println(tree)
+	fmt.Println(tree.Len(), tree.Contains(8), tree.Contains(4))
+	fmt.Println(tree.Min().OrElse(-1), tree.Max().OrElse(-1))
+
+	// Subtrees that cannot hold a value in the range are never visited.
+	for value := range tree.Range(3, 8) {
+		fmt.Println(value)
+	}
+
+	// Insert and Delete return new trees; the original is untouched.
+	fmt.Println(tree.Insert(4).Delete(9), tree)
+
+	// The zero value is the empty tree.
+	var zero collection.Tree[int]
+	fmt.Println(zero.IsEmpty(), zero.Min().IsEmpty())
+
+	// Output:
+	// Tree(1, 3, 5, 8, 9)
+	// 5 true false
+	// 1 9
+	// 3
+	// 5
+	// 8
+	// Tree(1, 3, 4, 5, 8) Tree(1, 3, 5, 8, 9)
+	// true true
+}
+
+func ExampleTree_Range() {
+	tree := collection.TreeOf(10, 20, 30, 40, 50)
+
+	for value := range tree.Range(20, 40) {
+		fmt.Println(value)
+	}
+
+	// Iteration is in order, and Backward walks the other way.
+	fmt.Println(tree.ToSlice())
+	fmt.Println(collection.CollectTree(tree.Backward()).Max().OrElse(-1))
+
+	// Output:
+	// 20
+	// 30
+	// 40
+	// [10 20 30 40 50]
+	// 50
+}

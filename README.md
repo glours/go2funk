@@ -2,7 +2,7 @@
 
 Go2Funk is a pet project exploring what Go generics make possible: implementing
 purely functional structures — `Option`, `Either`, `Result`, `Lazy`, `List`,
-`Pair` — the way [Vavr](https://vavr.io) does for Java.
+`Tree`, `Pair` — the way [Vavr](https://vavr.io) does for Java.
 
 **No runtime dependencies.** The `api/` packages import nothing outside the Go
 standard library, and that is a hard constraint rather than a preference.
@@ -250,6 +250,51 @@ joined := list.Fold("", func(acc string, value int) string { return acc + strcon
 Also available: `Tail`, `Append`, `AppendAll`, `Reverse`, `Insert`, `FlatMap`,
 `ForEach`, `ToSlice`, `String`, and `collection.Remove` for lists of a
 comparable type.
+
+See [`api/collection/example_test.go`](./api/collection/example_test.go).
+
+### Tree
+
+An immutable, persistent ordered set, kept balanced by weight. Values stay
+sorted, so iteration is in order and `Min`, `Max` and `Range` come for free.
+
+```go
+import "github.com/glours/go2funk/api/collection"
+
+tree := collection.TreeOf(5, 3, 8, 1, 9)
+
+fmt.Println(tree)                                    // Tree(1, 3, 5, 8, 9)
+fmt.Println(tree.Contains(8), tree.Min().OrElse(-1)) // true 1
+
+for value := range tree.Range(3, 8) {   // 3, 5, 8 — subtrees that cannot hold
+    fmt.Println(value)                  // a value in the range are skipped
+}
+
+// Insert and Delete return new trees; the original is untouched.
+fmt.Println(tree.Insert(4).Delete(9), tree)
+// Tree(1, 3, 4, 5, 8) Tree(1, 3, 5, 8, 9)
+```
+
+`Len` and `IsEmpty` are O(1); `Insert`, `Delete`, `Contains`, `Min` and `Max` are
+O(log n). Insertion rebuilds only the path from the root to the new value and
+shares everything else — inserting into a tree of a thousand values allocates
+ten nodes, which the test suite measures rather than claims. Inserting a value
+that is already there, or deleting one that is not, allocates nothing at all and
+hands back the very same tree.
+
+Ordering goes through `cmp.Compare`, not the `<` operator, so a float `NaN` has a
+place in the order rather than comparing false against everything and swallowing
+the values around it.
+
+The balancing rule is stated at the top of
+[`api/collection/tree.go`](./api/collection/tree.go) and checked by a test that
+replays thousands of random insertions and deletions, so the invariant is
+executable documentation rather than a comment. `doc.go` explains what
+structural sharing buys, with a diagram.
+
+Also available: `Backward`, `ToSlice`, `Map`, `Filter`, `Fold`, `String`, and
+`collection.CollectTree` to build one from an `iter.Seq`. `Map` may return a
+smaller tree: values that map to the same result collapse, as they do for any set.
 
 See [`api/collection/example_test.go`](./api/collection/example_test.go).
 
