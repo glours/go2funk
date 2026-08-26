@@ -71,6 +71,47 @@ control.FromPointer(p)
 
 Also available: `Get`, `OrElseGet`, `Or`, `FlatMap`, `Fold`, `ForEach`.
 
+`Option` also encodes to and from JSON, which the plain struct cannot do — an
+`Option` field without it marshals to `{}` whether it holds a value or not:
+
+```go
+type Profile struct {
+    Name     string                 `json:"name"`
+    Nickname control.Option[string] `json:"nickname"`
+    Age      control.Option[int]    `json:"age,omitzero"`
+}
+
+// {"name":"ada","nickname":"countess"}   — age is dropped, nickname is null when None
+```
+
+`None` encodes as `null`. Decoding an explicit `null` gives `None`; a missing key
+leaves the field alone, which for a fresh value means `None`. Decoding into an
+`Option` that already holds a value merges into it, as it would for a plain
+field of the same type.
+
+Use the `omitzero` tag (Go 1.24+) to leave the field out entirely — it behaves
+the same with both encoders. Avoid `omitempty` here: `encoding/json` emits `null`
+while `encoding/json/v2` drops the field, so the shape would differ depending on
+which one the caller uses.
+
+`Option` implements both forms of the marshaling contract: the byte-slice one
+(`json.Marshaler`, which is an alias for `encoding/json/v2.Marshaler`) and the
+streaming one (`MarshalJSONTo`). Both encoders prefer the streaming form, which
+is what lets the caller's options reach the value inside the `Option`. Code that
+dispatches on `json.Marshaler` reaches the byte-slice form instead, and that form
+cannot see those options — notably it always escapes HTML, as `encoding/json`
+does by default.
+
+> This support imports `encoding/json/v2`, which Go guards behind the `jsonv2`
+> experiment. Building with `GOEXPERIMENT=nojsonv2` therefore fails on the whole
+> `control` package, not just its JSON methods. That flag is a transitional
+> escape hatch for the v2 rollout and go2funk does not work around it.
+
+Any value that encodes as `null` — a nil pointer, slice, map or interface, or a
+nested `None` — decodes back to `None`, so the outer "a value is present" bit is
+lost for those.
+
+
 See [`api/control/example_test.go`](./api/control/example_test.go).
 
 ### Either
