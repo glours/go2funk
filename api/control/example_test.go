@@ -1,6 +1,7 @@
 package control_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -139,4 +140,29 @@ func ExampleLazy_Map() {
 	// source runs
 	// 42
 	// 0 true
+}
+
+func ExampleOption_json() {
+	type Profile struct {
+		Name     string                 `json:"name"`
+		Nickname control.Option[string] `json:"nickname"`
+		Age      control.Option[int]    `json:"age,omitzero"`
+	}
+
+	encoded, _ := json.Marshal(Profile{Name: "ada", Nickname: control.Some("countess")})
+	fmt.Println(string(encoded))
+
+	var back Profile
+	_ = json.Unmarshal([]byte(`{"name":"ada","nickname":null,"age":36}`), &back)
+	fmt.Println(back.Nickname.OrElse("none"), back.Age.OrElse(-1))
+
+	// A missing key leaves the Option empty.
+	var partial Profile
+	_ = json.Unmarshal([]byte(`{"name":"ada"}`), &partial)
+	fmt.Println(partial.Nickname.IsEmpty(), partial.Age.IsEmpty())
+
+	// Output:
+	// {"name":"ada","nickname":"countess"}
+	// none 36
+	// true true
 }
