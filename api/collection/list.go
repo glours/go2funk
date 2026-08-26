@@ -1,11 +1,3 @@
-// Package collection provides purely functional collections.
-//
-// The collections here are persistent: every operation returns a new value and
-// nothing is ever mutated in place, so sharing a collection between goroutines
-// or keeping an old version around is always safe.
-//
-// Every type integrates with the Go iterator protocol through All, which
-// returns an iter.Seq usable directly in a for range loop.
 package collection
 
 import (
