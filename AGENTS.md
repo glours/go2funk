@@ -110,8 +110,14 @@ These are settled decisions, not preferences:
 - Import order: stdlib, third-party, local module.
 - Comments explain *why*, not *what*. No commented-out code, no `TODO` left
   behind — open an issue or do it.
-- No dead code, no unused struct fields. If a field is scaffolding for a future
-  feature, it does not get committed.
+- No dead code, no unused struct fields. A branch no input can reach, or a field
+  nothing reads, does not get committed — not even defensively: an `if` no test
+  can execute is worse than the invariant it guards, which belongs in a test.
+- **One exception, and it has to be declared.** An unexported building block may
+  land before the exported type that consumes it, when the change is too large to
+  review in one piece. It must be complete, fully tested on its own, and the pull
+  request must name what will consume it and when. Scaffolding that arrives with
+  no such statement is dead code by another name.
 - Prefer clarity over cleverness: this is a library people read to learn.
 
 ## Documentation

@@ -43,6 +43,12 @@ const (
 // instead of comparing false against everything and silently swallowing the
 // values around it.
 //
+// That is the same choice the standard library makes for ordered operations:
+// slices.Sort puts a NaN first and slices.BinarySearch finds it, while the
+// equality-based slices.Contains and map[float64]V do not. A Tree is an ordered
+// structure and behaves like the former; the hash-keyed Map behaves like the
+// latter. cmp.Compare exists precisely to draw that line.
+//
 // Values are kept sorted, so iteration is in order, and Min, Max and Range come
 // for free. Inserting or deleting rebuilds only the path from the root to the
 // change — O(log n) nodes — and shares every other node with the tree it came
