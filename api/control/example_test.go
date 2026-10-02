@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/glours/go2funk/api/control"
+	"github.com/glours/go2funk/api/tuple"
 )
 
 func ExampleOption() {
@@ -165,4 +166,65 @@ func ExampleOption_json() {
 	// {"name":"ada","nickname":"countess"}
 	// none 36
 	// true true
+}
+
+func ExampleValidation() {
+	type signup struct {
+		Name string
+		Age  int
+	}
+	nameGiven := func(s signup) control.Validation[string, signup] {
+		if s.Name == "" {
+			return control.Invalid[string, signup]("name is empty")
+		}
+		return control.Valid[string](s)
+	}
+	adult := func(s signup) control.Validation[string, signup] {
+		if s.Age < 18 {
+			return control.Invalid[string, signup]("must be an adult")
+		}
+		return control.Valid[string](s)
+	}
+
+	// Every check runs: both problems are reported, not just the first.
+	fmt.Println(control.Check(signup{Name: "", Age: 12}, nameGiven, adult).Errors())
+	fmt.Println(control.Check(signup{Name: "ada", Age: 36}, nameGiven, adult).IsValid())
+
+	// Compare with Either, which stops at the first Left.
+	stop := control.FromEither(control.Left[string, int]("first")).FlatMap(
+		func(int) control.Validation[string, int] { return control.Invalid[string, int]("never reached") })
+	fmt.Println(stop.Errors())
+
+	// Output:
+	// [name is empty must be an adult]
+	// true
+	// [first]
+}
+
+func ExampleZip() {
+	parseAge := func(s string) control.Validation[error, int] {
+		return control.FromEither(control.Try(func() (int, error) { return strconv.Atoi(s) }))
+	}
+	nonEmpty := func(s string) control.Validation[error, string] {
+		if s == "" {
+			return control.Invalid[error, string](errors.New("name is empty"))
+		}
+		return control.Valid[error](s)
+	}
+	describe := func(p tuple.Pair[string, int]) string {
+		name, age := p.Unpack()
+		return name + " is " + strconv.Itoa(age)
+	}
+
+	// Values of different types, validated independently, then combined.
+	fmt.Println(control.Zip(nonEmpty("ada"), parseAge("36")).Map(describe).OrElse("?"))
+
+	// Both fail: ToResult joins every cause into one error for the Go idiom.
+	_, err := control.Unwrap(control.ToResult(control.Zip(nonEmpty(""), parseAge("x")).Map(describe)))
+	fmt.Println(err)
+
+	// Output:
+	// ada is 36
+	// name is empty
+	// strconv.Atoi: parsing "x": invalid syntax
 }
