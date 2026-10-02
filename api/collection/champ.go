@@ -335,3 +335,21 @@ func champAll[K comparable, V any](node *champNode[K, V], yield func(K, V) bool)
 	}
 	return true
 }
+
+// champMapValues rebuilds the trie with every value mapped. Keys and their
+// hashes are untouched, so both bitmaps carry over as they are: no key is hashed
+// again and no node changes shape, which keeps the result canonical. O(n).
+func champMapValues[K comparable, V, U any](node *champNode[K, V], mapper func(V) U) *champNode[K, U] {
+	if node == nil {
+		return nil
+	}
+	entries := make([]champEntry[K, U], len(node.entries))
+	for index, entry := range node.entries {
+		entries[index] = champEntry[K, U]{key: entry.key, value: mapper(entry.value), hash: entry.hash}
+	}
+	nodes := make([]*champNode[K, U], len(node.nodes))
+	for index, subtree := range node.nodes {
+		nodes[index] = champMapValues(subtree, mapper)
+	}
+	return &champNode[K, U]{dataMap: node.dataMap, nodeMap: node.nodeMap, entries: entries, nodes: nodes, size: node.size}
+}

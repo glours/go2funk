@@ -2,7 +2,7 @@
 
 Go2Funk is a pet project exploring what Go generics make possible: implementing
 purely functional structures — `Option`, `Either`, `Result`, `Lazy`, `List`,
-`Tree`, `Pair` — the way [Vavr](https://vavr.io) does for Java.
+`Tree`, `Map`, `Pair` — the way [Vavr](https://vavr.io) does for Java.
 
 **No runtime dependencies.** The `api/` packages import nothing outside the Go
 standard library, and that is a hard constraint rather than a preference.
@@ -295,6 +295,56 @@ structural sharing buys, with a diagram.
 Also available: `Backward`, `ToSlice`, `Map`, `Filter`, `Fold`, `String`, and
 `collection.CollectTree` to build one from an `iter.Seq`. `Map` may return a
 smaller tree: values that map to the same result collapse, as they do for any set.
+
+See [`api/collection/example_test.go`](./api/collection/example_test.go).
+
+### Map
+
+An immutable, persistent hash map, built on a CHAMP trie. Keys only need to be
+`comparable`, so structs, arrays and pointers work, hashed with `hash/maphash`.
+
+```go
+import "github.com/glours/go2funk/api/collection"
+
+ages := collection.EmptyMap[string, int]().Put("ada", 36).Put("alan", 41)
+
+fmt.Println(ages)  // Map[ada:36 alan:41]
+fmt.Println(ages.Get("ada").OrElse(-1), ages.Get("grace").IsEmpty())  // 36 true
+
+// Put and Delete return new maps; the original is untouched.
+fmt.Println(ages.Put("grace", 85).Delete("alan"), ages)
+// Map[ada:36 grace:85] Map[ada:36 alan:41]
+
+// Map changes the value type and keeps every key.
+fmt.Println(ages.Map(func(age int) string { return strconv.Itoa(age) + " years" }))
+// Map[ada:36 years alan:41 years]
+```
+
+Interop with Go maps goes through the standard iterators rather than through
+dedicated conversions:
+
+```go
+ages := collection.CollectMap(maps.All(goMap))  // map[K]V -> Map[K, V]
+goMap := maps.Collect(ages.All())              // Map[K, V] -> map[K]V
+```
+
+`Len` and `IsEmpty` are O(1); `Get`, `ContainsKey`, `Put` and `Delete` are
+O(log32 n). `Put` rebuilds only the path to the key and shares everything else:
+putting into a map of ten thousand entries allocates seven times, which the test
+suite measures, and the benchmarks show it barely moves as the map grows a
+thousandfold. Deleting a key that is not there allocates nothing and hands back
+the very same map.
+
+Iteration order is unspecified, as it is for a Go map. `String` sorts by key the
+way `fmt` does, so printing a `Map` is deterministic even though walking it is
+not. A float `NaN` key behaves as it does in a Go map: it can be added but never
+found again, since it is not equal to itself. `Tree` is the structure to reach
+for when order matters.
+
+`Map` maps the values and keeps the keys, which is what Vavr calls `mapValues`;
+mapping whole entries could merge keys and would not be a functor.
+
+Also available: `All`, `Keys`, `Values`, `Filter`, `Fold`, `String`.
 
 See [`api/collection/example_test.go`](./api/collection/example_test.go).
 

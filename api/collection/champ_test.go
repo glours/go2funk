@@ -11,6 +11,7 @@ import (
 	"math/bits"
 	"math/rand/v2"
 	"slices"
+	"strconv"
 	"testing"
 )
 
@@ -559,5 +560,53 @@ func TestChampChainsDownToACollisionNode(t *testing.T) {
 	checkChampNode(t, root, true)
 	if got := champCount(root); got != 2 {
 		t.Errorf("count = %d, want 2", got)
+	}
+}
+
+// Mapping the values keeps the trie's shape: same bitmaps, same hashes, so the
+// result needs no rehash and stays canonical. A collision node is included,
+// since only a test that forces the hash can build one.
+func TestChampMapValuesKeepsTheShape(t *testing.T) {
+	const shared uint64 = 0xdeadbeefcafebabe
+
+	var root *champNode[string, int]
+	for value := range 200 {
+		key := fmt.Sprint(value)
+		root, _ = champPut(root, key, value, hashKey(key), 0)
+	}
+	root, _ = champPut(root, "first", 1000, shared, 0)
+	root, _ = champPut(root, "second", 2000, shared, 0)
+
+	mapped := champMapValues(root, func(value int) string { return fmt.Sprint(value * 2) })
+
+	checkChampNode(t, mapped, true)
+	if champCount(mapped) != champCount(root) {
+		t.Fatalf("count = %d, want %d", champCount(mapped), champCount(root))
+	}
+	for value := range 200 {
+		key := fmt.Sprint(value)
+		if got, ok := champGet(mapped, key, hashKey(key), 0); !ok || got != fmt.Sprint(value*2) {
+			t.Fatalf("get(%q) = (%q, %v), want (%q, true)", key, got, ok, fmt.Sprint(value*2))
+		}
+	}
+
+	// The colliding keys are still reachable, and still removable, by the hash
+	// they were stored under: mapping carried it over rather than dropping it.
+	for key, want := range map[string]string{"first": "2000", "second": "4000"} {
+		if got, ok := champGet(mapped, key, shared, 0); !ok || got != want {
+			t.Errorf("get(%q) = (%q, %v), want (%q, true)", key, got, ok, want)
+		}
+	}
+	shrunk, removed := champRemove(mapped, "first", shared, 0)
+	if !removed {
+		t.Fatal("a colliding key of the mapped trie could not be removed")
+	}
+	checkChampNode(t, shrunk, true)
+
+	if got, _ := champGet(root, "first", shared, 0); got != 1000 {
+		t.Errorf("the original trie was modified: get(first) = %d, want 1000", got)
+	}
+	if champMapValues[string, int, string](nil, strconv.Itoa) != nil {
+		t.Error("mapping the empty trie gives the empty trie")
 	}
 }
