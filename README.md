@@ -2,7 +2,7 @@
 
 Go2Funk is a pet project exploring what Go generics make possible: implementing
 purely functional structures — `Option`, `Either`, `Result`, `Lazy`, `List`,
-`Tree`, `Map`, `Pair` — the way [Vavr](https://vavr.io) does for Java.
+`Tree`, `Map`, `Set`, `Pair` — the way [Vavr](https://vavr.io) does for Java.
 
 **No runtime dependencies.** The `api/` packages import nothing outside the Go
 standard library, and that is a hard constraint rather than a preference.
@@ -345,6 +345,46 @@ for when order matters.
 mapping whole entries could merge keys and would not be a functor.
 
 Also available: `All`, `Keys`, `Values`, `Filter`, `Fold`, `String`.
+
+See [`api/collection/example_test.go`](./api/collection/example_test.go).
+
+### Set
+
+An immutable, persistent hash set: a `Map` whose values carry nothing, so it
+shares the map's trie and its guarantees. Elements only need to be `comparable`.
+
+```go
+import "github.com/glours/go2funk/api/collection"
+
+team := collection.SetOf("ada", "alan", "grace")
+reviewers := collection.SetOf("grace", "linus")
+
+fmt.Println(team.Contains("ada"), team.Contains("linus"))  // true false
+
+fmt.Println(team.Union(reviewers))         // Set(ada, alan, grace, linus)
+fmt.Println(team.Intersection(reviewers))  // Set(grace)
+fmt.Println(team.Difference(reviewers))    // Set(ada, alan)
+
+// Insert and Delete return new sets; the original is untouched.
+fmt.Println(team.Insert("linus").Delete("alan"), team)
+// Set(ada, grace, linus) Set(ada, alan, grace)
+```
+
+`Len` and `IsEmpty` are O(1); `Contains`, `Insert` and `Delete` are O(log32 n).
+Inserting a value that is already there, or deleting one that is not, allocates
+nothing and hands back the very same set. `Union`, `Intersection` and
+`Difference` walk the smaller of the two sets, so combining a handful of values
+with a large set stays cheap whichever side it is on — a test measures it for
+`Union` and `Difference`, a benchmark shows it for `Intersection`.
+
+Iteration order is unspecified. `String` sorts the elements by their rendering,
+so printing is deterministic, but since elements are only comparable there is no
+other order to use: numbers sort as text, `Set(1, 10, 2)`. When the elements are
+ordered and the order matters, `Tree` is the set to use.
+
+Also available: `All`, `Map`, `Filter`, `Fold`, `String`, and
+`collection.CollectSet` to build one from an `iter.Seq`. `Map` may return a
+smaller set: values that map to the same result collapse.
 
 See [`api/collection/example_test.go`](./api/collection/example_test.go).
 
