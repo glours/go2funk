@@ -150,3 +150,36 @@ func ExampleCollectMap() {
 	// [ada alan]
 	// 77
 }
+
+func ExampleSet() {
+	team := collection.SetOf("ada", "alan", "grace")
+	reviewers := collection.SetOf("grace", "linus")
+
+	fmt.Println(team)
+	fmt.Println(team.Len(), team.Contains("ada"), team.Contains("linus"))
+
+	fmt.Println(team.Union(reviewers))
+	fmt.Println(team.Intersection(reviewers))
+	fmt.Println(team.Difference(reviewers))
+
+	// Insert and Delete return new sets; the original is untouched.
+	fmt.Println(team.Insert("linus").Delete("alan"), team)
+
+	// Numbers print sorted as text; sort them yourself when the order matters.
+	numbers := collection.SetOf(2, 10, 1)
+	fmt.Println(numbers, slices.Sorted(numbers.All()))
+
+	// The zero value is the empty set.
+	var zero collection.Set[string]
+	fmt.Println(zero.IsEmpty(), zero.Contains("ada"))
+
+	// Output:
+	// Set(ada, alan, grace)
+	// 3 true false
+	// Set(ada, alan, grace, linus)
+	// Set(grace)
+	// Set(ada, alan)
+	// Set(ada, grace, linus) Set(ada, alan, grace)
+	// Set(1, 10, 2) [1 2 10]
+	// true false
+}
