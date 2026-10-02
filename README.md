@@ -1,7 +1,7 @@
 # Go2Funk
 
 Go2Funk is a pet project exploring what Go generics make possible: implementing
-purely functional structures — `Option`, `Either`, `Result`, `Lazy`, `List`,
+purely functional structures — `Option`, `Either`, `Result`, `Validation`, `Lazy`, `List`,
 `Tree`, `Map`, `Set`, `Pair` — the way [Vavr](https://vavr.io) does for Java.
 
 **No runtime dependencies.** The `api/` packages import nothing outside the Go
@@ -156,6 +156,42 @@ fmt.Println(err)  // strconv.Atoi: parsing "nope": invalid syntax
 
 `Ok`, `Err`, `Try` and `Unwrap` are package-level functions rather than methods
 because a type alias cannot declare methods of its own.
+
+### Validation
+
+`Validation[E, T]` holds either a valid value or every error found while
+validating it. Where `Either` and `Result` stop at the first failure,
+`Validation` runs every check and reports all the problems at once, which is
+what a form, a config file or a request body needs.
+
+```go
+// Several checks on one value: all of them run.
+control.Check(signup, nameGiven, adult).Errors()
+// [name is empty must be an adult]
+
+// Values of different types, validated independently, then combined.
+control.Zip(nonEmpty("ada"), parseAge("36")).Map(describe).OrElse("?")  // ada is 36
+
+// Both fail: ToResult joins every cause for the Go (T, error) idiom.
+_, err := control.Unwrap(control.ToResult(control.Zip(nonEmpty(""), parseAge("x")).Map(describe)))
+// name is empty
+// strconv.Atoi: parsing "x": invalid syntax
+```
+
+The errors are kept as a `[]E`, in the order they were found, so the error type
+needs no method and no combining function. `Sequence` gathers any number of
+validations of the same type into one of a slice. The zero value is valid: no
+error collected means nothing was found wrong.
+
+`Zip` combines two validations, and zipping its result again combines any
+number of them, at the cost of nesting the pairs. It is a function rather than a
+method because Go cannot express it as one: a `Zip` method returning
+`Validation[E, Pair[T, U]]` would give that type a `Zip` of its own, and so on
+without end, an instantiation cycle the compiler rejects. `FlatMap` is there
+too, but it is sequential by nature and stops at the first invalid step.
+
+Also available: `Valid`, `Invalid`, `Get`, `OrElse`, `Map`, `MapError`, `Fold`,
+`ToOption`, `ToEither`, and `FromEither`, which converts a `Result` as well.
 
 ### Lazy
 
