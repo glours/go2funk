@@ -2,6 +2,8 @@ package collection_test
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 
 	"github.com/glours/go2funk/api/collection"
@@ -104,4 +106,47 @@ func ExampleTree_Range() {
 	// 40
 	// [10 20 30 40 50]
 	// 50
+}
+
+func ExampleMap() {
+	ages := collection.EmptyMap[string, int]().Put("ada", 36).Put("alan", 41)
+
+	fmt.Println(ages)
+	fmt.Println(ages.Len(), ages.Get("ada").OrElse(-1), ages.Get("grace").IsEmpty())
+
+	// Put and Delete return new maps; the original is untouched.
+	fmt.Println(ages.Put("grace", 85).Delete("alan"), ages)
+
+	// Map changes the value type and keeps every key.
+	fmt.Println(ages.Map(func(age int) string { return strconv.Itoa(age) + " years" }))
+
+	// The zero value is the empty map.
+	var zero collection.Map[string, int]
+	fmt.Println(zero.IsEmpty(), zero.Get("ada").IsEmpty())
+
+	// Output:
+	// Map[ada:36 alan:41]
+	// 2 36 true
+	// Map[ada:36 grace:85] Map[ada:36 alan:41]
+	// Map[ada:36 years alan:41 years]
+	// true true
+}
+
+func ExampleCollectMap() {
+	// In from a Go map, and back out, through the standard iterators.
+	ages := collection.CollectMap(maps.All(map[string]int{"ada": 36, "alan": 41}))
+	older := ages.Filter(func(_ string, age int) bool { return age > 40 })
+
+	fmt.Println(maps.Collect(older.All()))
+
+	// Iteration order is unspecified, so sort when order matters.
+	fmt.Println(slices.Sorted(ages.Keys()))
+
+	total := ages.Fold(0, func(sum int, _ string, age int) int { return sum + age })
+	fmt.Println(total)
+
+	// Output:
+	// map[alan:41]
+	// [ada alan]
+	// 77
 }
